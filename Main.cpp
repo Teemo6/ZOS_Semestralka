@@ -3,49 +3,57 @@
 #include <vector>
 
 #include "Constants.hpp"
-
-// Argument definition
-#define ARG_COUNT 2
-#define ARG_FILE_SYSTEM   argv[1]
+#include "FileSystem.hpp"
 
 int main(int argc, char *argv[]){
-    if(argc != ARG_COUNT){
-        std::cout << "Usage:\n\t./ZOS_Semestralka <name of filesystem>\n";
+    if(argc != 2){
+        std::cout << "Usage: ./ZOS_Semestralka <file system name>" << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    std::string fs_name(ARG_FILE_SYSTEM);
+    auto *fs = new FileSystem(argv[1]);
+    std::string fs_name = fs->name;
 
     // Loop
-    std::string line;
-
     while (true){
+        bool valid = false;
+        std::string line;
+
+        // Get input
         std::cout << fs_name << "> ";
         std::getline(std::cin, line);
 
+        // Build command vector
         std::istringstream iss(line);
         std::vector<std::string> command;
         std::string part;
-
         while (iss >> part){
             command.push_back(part);
         }
 
+        // Skip or exit
         if (command.empty()) continue;
+        if (command[0] == "exit"){
+            delete fs;
+            break;
+        }
 
-        if (COMMANDS.find(command[0]) != COMMANDS.end()){
+        // Valid command
+        if (COMMANDS.count(command[0]) != 0){
             if (command.size() != COMMANDS.at(command[0])){
-                std::cout << "INVALID NUMBER OF PARAMETERS, EXPECTED " << std::to_string(COMMANDS.at(command[0])) << ", GOT " << command.size() << std::endl;
+                std::cout << "INVALID NUMBER OF PARAMETERS, EXPECTED " << std::to_string(COMMANDS.at(command[0]) - 1) << ", GOT " << command.size() - 1 << std::endl;
                 continue;
             }
+            valid = true;
         }
-
         if (command[0] == "ls" && (command.size() == 1 || command.size() == 2)){
-
+            std::cout << "cau" << std::endl;
+            valid = true;
         }
 
-        if (command[0] == "exit"){
-            break;
+        if (!valid){
+            std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
+            continue;
         }
     }
 

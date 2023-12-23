@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.16)
 
 project(ZOS_Semestralka)
 
@@ -10,4 +10,8 @@ add_executable(
         ZOS_Semestralka
         Constants.hpp
         Main.cpp
+        FileSystem.cpp
+        FileSystem.hpp
+        Superblock.cpp
+        Superblock.hpp
 )

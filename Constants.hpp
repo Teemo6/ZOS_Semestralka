@@ -12,8 +12,6 @@ const std::unordered_map<std::string, int> COMMANDS = {
         {"rm",      3},
         {"mkdir",   2},
         {"rmdir",   3},
-        {"ls",      1},
-        {"ls",      2},
         {"cat",     2},
         {"cd",      2},
         {"pwd",     1},
@@ -22,6 +20,7 @@ const std::unordered_map<std::string, int> COMMANDS = {
         {"outcp",   3},
         {"load",    2},
         {"format",  2},
+        {"ln",      3},
 };
 
 #endif
