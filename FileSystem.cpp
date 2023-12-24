@@ -9,6 +9,9 @@ FileSystem::FileSystem(std::string new_name){
         fclose(temp);
         file = fopen(name.c_str(), "wb+");
     } else file = nullptr;
+
+    sb = new Superblock();
+    sb->init(102400);
 }
 
 FileSystem::~FileSystem(){
@@ -19,14 +22,28 @@ void FileSystem::format(int32_t size){
     file = fopen(name.c_str(), "wb+");
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bool FileSystem::is_formatted() const{
     return file != nullptr;
 }
 
-void FileSystem::incp(){
-
-}
-
-void FileSystem::outcp(){
-
+std::string FileSystem::get_name() const{
+    return name;
 }

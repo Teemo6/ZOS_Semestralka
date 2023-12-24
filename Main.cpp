@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <vector>
 
@@ -12,7 +13,41 @@ int main(int argc, char *argv[]){
     }
 
     auto *fs = new FileSystem(argv[1]);
-    std::string fs_name = fs->name;
+    std::string fs_name = fs->get_name();
+
+    std::cout << "FS: " << sizeof(FileSystem) << std::endl;
+    std::cout << "Superblock: " << sizeof(Superblock) << std::endl;
+    std::cout << "DirItem: " << sizeof(DirectoryItem) << std::endl;
+
+    auto *sb1 = new Superblock();
+    std::cout << fs->sb->to_string() << std::endl;
+
+    std::ofstream outFile("fs.ext", std::ios::binary);
+    if (!outFile) {
+        std::cerr << "Error opening the file for writing!" << std::endl;
+        return 1;
+    }
+    outFile.write(reinterpret_cast<const char*>(fs->sb), sizeof(Superblock));
+    outFile.close();
+
+    std::cout << "-------------------" << std::endl;
+    std::cout << sb1->to_string() << std::endl;
+
+    std::ifstream inFile("fs.ext", std::ios::binary);
+    if (!inFile) {
+        std::cerr << "Error opening the file for reading!" << std::endl;
+        return 1;
+    }
+    inFile.read(reinterpret_cast<char*>(sb1), sizeof(Superblock));
+    inFile.close();
+
+    std::cout << "-------------------" << std::endl;
+    std::cout << sb1->to_string() << std::endl;
+
+
+
+    delete sb1;
+
 
     // Loop
     while (true){

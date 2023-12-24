@@ -14,4 +14,6 @@ add_executable(
         FileSystem.hpp
         Superblock.cpp
         Superblock.hpp
+        DirectoryItem.cpp
+        DirectoryItem.hpp
 )

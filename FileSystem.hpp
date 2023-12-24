@@ -4,20 +4,36 @@
 #include <string>
 
 #include "Superblock.hpp"
+#include "DirectoryItem.hpp"
 
 class FileSystem {
+private:
+    std::string name;
+    FILE *file;
+
+
 public:
     explicit FileSystem(std::string name);
     ~FileSystem();
 
+
+    Superblock *sb;
+
+
+
     void format(int32_t bits);
 
+
+
+
+
+
+
+
+
+
     bool is_formatted() const;
-
-    std::string name;
-    FILE *file;
-
-    Superblock *sb{};
+    std::string get_name() const;
 };
 
 

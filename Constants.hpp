@@ -5,6 +5,12 @@
 
 const int STRING_LENGHT = 12;
 
+const int CLUSTER_SIZE = 1024;
+const int INODE_COUNT = 1000;
+
+
+
+
 const int MOST_COMMAND_ARG = 3;
 const std::unordered_map<std::string, int> COMMANDS = {
         {"cp",      3},
