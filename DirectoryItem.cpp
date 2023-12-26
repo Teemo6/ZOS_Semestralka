@@ -7,4 +7,5 @@ DirectoryItem::DirectoryItem(std::string &new_name, uint32_t new_inode){
     name[sizeof(name) - 1] = '\0';
 
     inode = new_inode;
+    next = nullptr;
 }

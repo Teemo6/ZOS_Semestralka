@@ -3,10 +3,12 @@
 
 #include <unordered_map>
 
-const int STRING_LENGHT = 12;
+const uint32_t STRING_LENGHT = 12;
 
-const int CLUSTER_SIZE = 1024;
-const int INODE_COUNT = 1000;
+const uint32_t ID_ITEM_FREE = -1;
+
+const uint32_t CLUSTER_SIZE = 1024;
+const uint32_t INODE_COUNT = 1000;
 
 
 

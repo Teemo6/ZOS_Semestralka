@@ -13,6 +13,7 @@ public:
 
     unsigned char name[STRING_LENGHT]{};
     uint32_t inode;
+    DirectoryItem *next;
 };
 
 

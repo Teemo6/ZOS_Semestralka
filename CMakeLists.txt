@@ -16,4 +16,6 @@ add_executable(
         Superblock.hpp
         DirectoryItem.cpp
         DirectoryItem.hpp
+        IndexNode.cpp
+        IndexNode.hpp
 )

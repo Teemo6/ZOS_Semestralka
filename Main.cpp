@@ -1,53 +1,32 @@
 #include <iostream>
-#include <fstream>
 #include <sstream>
+#include <csignal>
 #include <vector>
 
 #include "Constants.hpp"
 #include "FileSystem.hpp"
 
+FileSystem *fs = nullptr;
+
+void end(int id){
+    delete fs;
+    std::cout << "Closing application" << std::endl;
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char *argv[]){
+    // Check arg
     if(argc != 2){
         std::cout << "Usage: ./ZOS_Semestralka <file system name>" << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    auto *fs = new FileSystem(argv[1]);
-    std::string fs_name = fs->get_name();
+    // Handle signal
+    signal(SIGINT, end);
+    signal(SIGTERM, end);
 
-    std::cout << "FS: " << sizeof(FileSystem) << std::endl;
-    std::cout << "Superblock: " << sizeof(Superblock) << std::endl;
-    std::cout << "DirItem: " << sizeof(DirectoryItem) << std::endl;
-
-    auto *sb1 = new Superblock();
-    std::cout << fs->sb->to_string() << std::endl;
-
-    std::ofstream outFile("fs.ext", std::ios::binary);
-    if (!outFile) {
-        std::cerr << "Error opening the file for writing!" << std::endl;
-        return 1;
-    }
-    outFile.write(reinterpret_cast<const char*>(fs->sb), sizeof(Superblock));
-    outFile.close();
-
-    std::cout << "-------------------" << std::endl;
-    std::cout << sb1->to_string() << std::endl;
-
-    std::ifstream inFile("fs.ext", std::ios::binary);
-    if (!inFile) {
-        std::cerr << "Error opening the file for reading!" << std::endl;
-        return 1;
-    }
-    inFile.read(reinterpret_cast<char*>(sb1), sizeof(Superblock));
-    inFile.close();
-
-    std::cout << "-------------------" << std::endl;
-    std::cout << sb1->to_string() << std::endl;
-
-
-
-    delete sb1;
-
+    // Init fs
+    fs = new FileSystem(argv[1]);
 
     // Loop
     while (true){
@@ -55,7 +34,7 @@ int main(int argc, char *argv[]){
         std::string line;
 
         // Get input
-        std::cout << fs_name << "> ";
+        std::cout << fs->get_name() << "> ";
         std::getline(std::cin, line);
 
         // Build command vector
@@ -69,7 +48,7 @@ int main(int argc, char *argv[]){
         // Skip or exit
         if (command.empty()) continue;
         if (command[0] == "exit"){
-            delete fs;
+            end(SIGTERM);
             break;
         }
 
@@ -88,6 +67,21 @@ int main(int argc, char *argv[]){
 
         if (!valid){
             std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
+            continue;
+        }
+
+        if (command[0] == "format"){
+            uint32_t size;
+            try{
+                size = std::stoi(command[1]);
+            } catch (const std::exception &e){
+                std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
+                continue;
+            }
+
+            std::cout << fs->sb->to_string() << std::endl;
+            fs->format(size);
+            std::cout << fs->sb->to_string() << std::endl;
             continue;
         }
     }

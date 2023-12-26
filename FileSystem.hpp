@@ -2,15 +2,16 @@
 #define ZOS_SEMESTRALKA_FILESYSTEM_H
 
 #include <string>
+#include <fstream>
 
 #include "Superblock.hpp"
 #include "DirectoryItem.hpp"
 
 class FileSystem {
 private:
+    bool initialized;
     std::string name;
-    FILE *file;
-
+    std::ofstream out_file;
 
 public:
     explicit FileSystem(std::string name);
@@ -21,18 +22,11 @@ public:
 
 
 
-    void format(int32_t bits);
+    void format(uint32_t size);
 
 
 
-
-
-
-
-
-
-
-    bool is_formatted() const;
+    bool is_initialized() const;
     std::string get_name() const;
 };
 
