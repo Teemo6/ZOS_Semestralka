@@ -6,9 +6,12 @@
 const uint32_t STRING_LENGHT = 12;
 
 const uint32_t ID_ITEM_FREE = -1;
+const uint32_t INVALID = -1;
 
-const uint32_t CLUSTER_SIZE = 1024;
-const uint32_t INODE_COUNT = 1000;
+const uint32_t CLUSTER_SIZE = 512;
+const uint32_t INODE_COUNT = 1024;
+
+const uint32_t BITMAP_BITS = 32;
 
 
 
@@ -26,7 +29,7 @@ const std::unordered_map<std::string, int> COMMANDS = {
         {"info",    2},
         {"incp",    3},
         {"outcp",   3},
-        {"load",    2},
+        {"load_bits",    2},
         {"format",  2},
         {"ln",      3},
 };

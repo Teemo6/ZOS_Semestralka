@@ -10,7 +10,7 @@ FileSystem *fs = nullptr;
 
 void end(int id){
     delete fs;
-    std::cout << "Closing application" << std::endl;
+    std::cout << "File system closed successfully" << std::endl;
     exit(EXIT_SUCCESS);
 }
 
@@ -25,7 +25,7 @@ int main(int argc, char *argv[]){
     signal(SIGINT, end);
     signal(SIGTERM, end);
 
-    // Init fs
+    // Init file system
     fs = new FileSystem(argv[1]);
 
     // Loop
@@ -61,7 +61,6 @@ int main(int argc, char *argv[]){
             valid = true;
         }
         if (command[0] == "ls" && (command.size() == 1 || command.size() == 2)){
-            std::cout << "cau" << std::endl;
             valid = true;
         }
 
@@ -78,10 +77,28 @@ int main(int argc, char *argv[]){
                 std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
                 continue;
             }
-
-            std::cout << fs->sb->to_string() << std::endl;
             fs->format(size);
-            std::cout << fs->sb->to_string() << std::endl;
+            continue;
+        }
+
+        if (command[0] == "ls"){
+            fs->get_inode();
+            std::cout << fs->inode_bitmap->to_string() << std::endl;
+            std::cout << fs->data_bitmap->to_string() << std::endl;
+            continue;
+        }
+
+        if (command[0] == "cat"){
+            uint32_t size;
+            try{
+                size = std::stoi(command[1]);
+            } catch (const std::exception &e){
+                std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
+                continue;
+            }
+            fs->free_inode(size);
+            std::cout << fs->inode_bitmap->to_string() << std::endl;
+            std::cout << fs->data_bitmap->to_string() << std::endl;
             continue;
         }
     }

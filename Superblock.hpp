@@ -22,8 +22,8 @@ public:
     unsigned char signature[STRING_LENGHT]{};
     uint32_t disk_size;
     uint32_t cluster_size;
-    uint32_t cluster_count;
     uint32_t inode_count;
+    uint32_t cluster_count;
     uint32_t inode_bitmap_start;
     uint32_t data_bitmap_start;
     uint32_t inode_block_start;

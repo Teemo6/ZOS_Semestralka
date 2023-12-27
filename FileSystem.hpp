@@ -3,9 +3,12 @@
 
 #include <string>
 #include <fstream>
+#include <vector>
 
 #include "Superblock.hpp"
 #include "DirectoryItem.hpp"
+#include "IndexNode.hpp"
+#include "Bitmap.hpp"
 
 class FileSystem {
 private:
@@ -19,10 +22,15 @@ public:
 
 
     Superblock *sb;
+    Bitmap *inode_bitmap;
+    Bitmap *data_bitmap;
+    std::vector<IndexNode*> inodes;
 
-
+    void write_all();
 
     void format(uint32_t size);
+    void get_inode();
+    void free_inode(uint32_t size);
 
 
 

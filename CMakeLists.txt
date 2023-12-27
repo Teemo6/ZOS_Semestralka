@@ -18,4 +18,4 @@ add_executable(
         DirectoryItem.hpp
         IndexNode.cpp
         IndexNode.hpp
-)
+        Bitmap.cpp Bitmap.hpp)
