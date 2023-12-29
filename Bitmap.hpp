@@ -14,8 +14,8 @@ class Bitmap{
     std::vector<std::bitset<BITMAP_BITS>> data;
 
 public:
-    Bitmap(uint32_t count);
-    void load_bits(int set, uint32_t bits);
+    explicit Bitmap(uint32_t count);
+    void load_bits(uint32_t set, uint32_t bits);
 
     uint32_t get_bits(uint32_t pos);
 
@@ -23,7 +23,6 @@ public:
     void set_free(uint32_t pos);
 
     std::string to_string();
-
 };
 
 #endif

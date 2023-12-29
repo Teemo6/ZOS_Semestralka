@@ -8,8 +8,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 
 add_executable(
         ZOS_Semestralka
-        Constants.hpp
         Main.cpp
+        Constants.hpp
         FileSystem.cpp
         FileSystem.hpp
         Superblock.cpp
@@ -18,4 +18,8 @@ add_executable(
         DirectoryItem.hpp
         IndexNode.cpp
         IndexNode.hpp
-        Bitmap.cpp Bitmap.hpp)
+        Bitmap.cpp
+        Bitmap.hpp
+        Directory.cpp
+        Directory.hpp
+)

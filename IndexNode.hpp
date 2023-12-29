@@ -3,17 +3,20 @@
 
 #include <cstdint>
 
+#include "DirectoryItem.hpp"
+
 class IndexNode{
 private:
 
 
 public:
-    IndexNode(uint32_t id, bool directory);
+    explicit IndexNode(uint32_t id);
 
     uint32_t node_id;
     bool is_directory;
     uint32_t references;
     uint32_t file_size;
+
     uint32_t direct1;
     uint32_t direct2;
     uint32_t direct3;
@@ -22,7 +25,9 @@ public:
     uint32_t indirect1;
     uint32_t indirect2;
 
+    void set_directory(uint32_t block);
 
+    std::string to_string() const;
 };
 
 #endif

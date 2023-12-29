@@ -82,9 +82,20 @@ int main(int argc, char *argv[]){
         }
 
         if (command[0] == "ls"){
-            fs->get_inode();
-            std::cout << fs->inode_bitmap->to_string() << std::endl;
-            std::cout << fs->data_bitmap->to_string() << std::endl;
+            fs->ls("");
+            continue;
+        }
+
+        if (command[0] == "cd"){
+            uint32_t size;
+            try{
+                size = std::stoi(command[1]);
+            } catch (const std::exception &e){
+                std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
+                continue;
+            }
+            IndexNode *inode = fs->inode_vector[size];
+            std::cout << inode->to_string() << std::endl;
             continue;
         }
 
@@ -99,6 +110,24 @@ int main(int argc, char *argv[]){
             fs->free_inode(size);
             std::cout << fs->inode_bitmap->to_string() << std::endl;
             std::cout << fs->data_bitmap->to_string() << std::endl;
+            continue;
+        }
+
+        if (command[0] == "incp"){
+            uint32_t size;
+            try{
+                size = std::stoi(command[1]);
+            } catch (const std::exception &e){
+                std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
+                continue;
+            }
+            std::array<unsigned char, CLUSTER_SIZE> asd = fs->data_vector[size];
+            std::cout << asd.data() << std::endl;
+            continue;
+        }
+
+        if (command[0] == "mkdir"){
+            fs->mkdir(command[1]);
             continue;
         }
     }

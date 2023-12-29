@@ -5,8 +5,8 @@
 
 const uint32_t STRING_LENGHT = 12;
 
-const uint32_t ID_ITEM_FREE = -1;
-const uint32_t INVALID = -1;
+const uint32_t FREE = UINT32_MAX;
+const uint32_t INVALID = UINT32_MAX - 1;
 
 const uint32_t CLUSTER_SIZE = 512;
 const uint32_t INODE_COUNT = 1024;
