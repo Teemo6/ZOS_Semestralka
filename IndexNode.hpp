@@ -25,6 +25,7 @@ public:
     uint32_t indirect1;
     uint32_t indirect2;
 
+    void reset();
     void set_directory(uint32_t block);
 
     std::string to_string() const;

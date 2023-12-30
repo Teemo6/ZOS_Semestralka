@@ -10,7 +10,7 @@ Directory::Directory(uint32_t self_inode, uint32_t parent_inode){
     content = std::vector<DirectoryItem *>();
 
     content.emplace_back(new DirectoryItem(std::string("."), self));
-    content.emplace_back(new DirectoryItem(std::string(".."), self));
+    content.emplace_back(new DirectoryItem(std::string(".."), parent));
 }
 
 Directory::Directory(std::array<unsigned char, CLUSTER_SIZE> &data){
@@ -39,16 +39,39 @@ void Directory::add_file(const std::string &name, uint32_t inode){
     content.emplace_back(new DirectoryItem(name, inode));
 }
 
-void Directory::remove_file(uint32_t inode){
+bool Directory::remove_file(const std::string &name){
     int to_remove = -1;
     for (int i = 2; i < content.size(); i++){
         auto *file = content[i];
-        if (file->inode == inode){
+        if (reinterpret_cast<const char*>(file->name) == name){
             to_remove = i;
             break;
         }
     }
-    if (to_remove != -1) content.erase(content.begin() + to_remove);
+    if (to_remove != -1) {
+        content.erase(content.begin() + to_remove);
+        return true;
+    }
+    return false;
+}
+
+uint32_t Directory::get_file_inode(const std::string &name){
+    for (auto file : content){
+        if (reinterpret_cast<const char*>(file->name) == name){
+            return file->inode;
+        }
+    }
+    return INVALID;
+}
+
+std::string Directory::get_file_name(uint32_t inode){
+    for (int i = 2; i < content.size(); i++){
+        auto *file = content[i];
+        if (file->inode == inode){
+            return reinterpret_cast<const char*>(file->name);
+        }
+    }
+    return EMPTY_STRING;
 }
 
 std::array<unsigned char, CLUSTER_SIZE> Directory::serialize(){
@@ -56,7 +79,7 @@ std::array<unsigned char, CLUSTER_SIZE> Directory::serialize(){
     data.fill('\0');
 
     int offset = 0;
-    for(auto file : content){
+    for (auto file : content){
         std::memcpy(data.data() + offset, file->name, sizeof(file->name));
         std::memcpy(data.data() + offset + sizeof(file->name), &(file->inode), sizeof(uint32_t));
         offset += sizeof(DirectoryItem);

@@ -14,7 +14,7 @@ std::string DirectoryItem::to_string(){
     std::stringstream ss;
 
     ss << "inode: " << inode
-       << ", name: " << name;
+       << ", fs_name: " << name;
 
     return ss.str();
 }

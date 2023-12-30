@@ -17,6 +17,20 @@ IndexNode::IndexNode(uint32_t id){
     indirect2 = FREE;
 }
 
+void IndexNode::reset(){
+    is_directory = false;
+    references = FREE;
+    file_size = FREE;
+
+    direct1 = FREE;
+    direct2 = FREE;
+    direct3 = FREE;
+    direct4 = FREE;
+    direct5 = FREE;
+    indirect1 = FREE;
+    indirect2 = FREE;
+}
+
 void IndexNode::set_directory(uint32_t block){
     is_directory = true;
     file_size = CLUSTER_SIZE;

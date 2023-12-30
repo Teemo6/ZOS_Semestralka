@@ -8,6 +8,8 @@ const uint32_t STRING_LENGHT = 12;
 const uint32_t FREE = UINT32_MAX;
 const uint32_t INVALID = UINT32_MAX - 1;
 
+const std::string EMPTY_STRING = "";
+
 const uint32_t CLUSTER_SIZE = 512;
 const uint32_t INODE_COUNT = 1024;
 
@@ -22,7 +24,7 @@ const std::unordered_map<std::string, int> COMMANDS = {
         {"mv",      3},
         {"rm",      3},
         {"mkdir",   2},
-        {"rmdir",   3},
+        {"rmdir",   2},
         {"cat",     2},
         {"cd",      2},
         {"pwd",     1},

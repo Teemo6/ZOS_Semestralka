@@ -17,7 +17,7 @@ void end(int id){
 int main(int argc, char *argv[]){
     // Check arg
     if(argc != 2){
-        std::cout << "Usage: ./ZOS_Semestralka <file system name>" << std::endl;
+        std::cout << "Usage: ./ZOS_Semestralka <file system fs_name>" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]){
         // Valid command
         if (COMMANDS.count(command[0]) != 0){
             if (command.size() != COMMANDS.at(command[0])){
-                std::cout << "INVALID NUMBER OF PARAMETERS, EXPECTED " << std::to_string(COMMANDS.at(command[0]) - 1) << ", GOT " << command.size() - 1 << std::endl;
+                std::cout << "Invalid number of parameters, expected " << std::to_string(COMMANDS.at(command[0]) - 1) << ", got " << command.size() - 1 << std::endl;
                 continue;
             }
             valid = true;
@@ -65,7 +65,34 @@ int main(int argc, char *argv[]){
         }
 
         if (!valid){
-            std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
+            std::cout << "Invalid command '" << command[0] << "'" << std::endl;
+            continue;
+        }
+
+        // Handle command
+        if (command[0] == "mkdir"){
+            fs->mkdir(command[1]);
+            continue;
+        }
+
+        if (command[0] == "rmdir"){
+            fs->rmdir(command[1]);
+            continue;
+        }
+
+        if (command[0] == "ls"){
+            if (command.size() == 1) fs->ls("");
+            else fs->ls(command[1]);
+            continue;
+        }
+
+        if (command[0] == "cd"){
+            fs->cd(command[1]);
+            continue;
+        }
+
+        if (command[0] == "pwd"){
+            fs->pwd();
             continue;
         }
 
@@ -74,60 +101,10 @@ int main(int argc, char *argv[]){
             try{
                 size = std::stoi(command[1]);
             } catch (const std::exception &e){
-                std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
+                std::cout << "Invalid parameter '" << command[1] << "'" << std::endl;
                 continue;
             }
             fs->format(size);
-            continue;
-        }
-
-        if (command[0] == "ls"){
-            fs->ls("");
-            continue;
-        }
-
-        if (command[0] == "cd"){
-            uint32_t size;
-            try{
-                size = std::stoi(command[1]);
-            } catch (const std::exception &e){
-                std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
-                continue;
-            }
-            IndexNode *inode = fs->inode_vector[size];
-            std::cout << inode->to_string() << std::endl;
-            continue;
-        }
-
-        if (command[0] == "cat"){
-            uint32_t size;
-            try{
-                size = std::stoi(command[1]);
-            } catch (const std::exception &e){
-                std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
-                continue;
-            }
-            fs->free_inode(size);
-            std::cout << fs->inode_bitmap->to_string() << std::endl;
-            std::cout << fs->data_bitmap->to_string() << std::endl;
-            continue;
-        }
-
-        if (command[0] == "incp"){
-            uint32_t size;
-            try{
-                size = std::stoi(command[1]);
-            } catch (const std::exception &e){
-                std::cout << "INVALID COMMAND '" << command[0] << "'" << std::endl;
-                continue;
-            }
-            std::array<unsigned char, CLUSTER_SIZE> asd = fs->data_vector[size];
-            std::cout << asd.data() << std::endl;
-            continue;
-        }
-
-        if (command[0] == "mkdir"){
-            fs->mkdir(command[1]);
             continue;
         }
     }

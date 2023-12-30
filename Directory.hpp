@@ -13,7 +13,9 @@ public:
     Directory(std::array<unsigned char, CLUSTER_SIZE> &data);
 
     void add_file(const std::string &name, uint32_t inode);
-    void remove_file(uint32_t inode);
+    bool remove_file(const std::string &name);
+    uint32_t get_file_inode(const std::string &name);
+    std::string get_file_name(uint32_t inode);
 
     std::array<unsigned char, CLUSTER_SIZE> serialize();
 

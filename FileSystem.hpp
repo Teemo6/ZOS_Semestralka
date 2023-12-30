@@ -14,7 +14,7 @@
 class FileSystem {
 private:
     bool initialized;
-    std::string name;
+    std::string fs_name;
     std::ofstream out_file;
 
     Directory *root_dir;
@@ -33,17 +33,25 @@ public:
     std::vector<IndexNode *> inode_vector;
     std::vector<std::array<unsigned char, CLUSTER_SIZE>> data_vector;
 
-
-
-    void mkdir(const std::string &dir_name);
-    void ls(const std::string &dir_name);
-    void format(uint32_t size);
-
-    void get_inode();
-    void free_inode(uint32_t size);
-
     bool is_initialized() const;
     std::string get_name() const;
+
+    void free_inode(uint32_t id);
+
+    void cp(const std::string &file1, const std::string &file2);
+    void mv(const std::string &file1, const std::string &file2);
+    void rm(const std::string &file);
+    void mkdir(const std::string &dir_name);
+    void rmdir(const std::string &dir_name);
+    void ls(const std::string &dir_name);
+    void cat(const std::string &file);
+    void cd(const std::string &dir_name);
+    void pwd();
+    void info(const std::string &file);
+    void incp(const std::string &file1, const std::string &file2);
+    void outcp(const std::string &file1, const std::string &file2);
+    void load(const std::string &file);
+    void format(uint32_t size);
 };
 
 
