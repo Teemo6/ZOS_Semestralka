@@ -15,6 +15,8 @@ const uint32_t INODE_COUNT = 1024;
 
 const uint32_t BITMAP_BITS = 32;
 
+const std::string CALL_FORMAT_MESSAGE = "File system not initialized, call 'format' first";
+
 
 
 

@@ -17,7 +17,6 @@ private:
     std::string fs_name;
     std::ofstream out_file;
 
-    Directory *root_dir;
     Directory *curr_dir;
 
     void write_all();
@@ -37,6 +36,7 @@ public:
     std::string get_name() const;
 
     void free_inode(uint32_t id);
+    uint32_t get_dir_from_path(const std::string &path);
 
     void cp(const std::string &file1, const std::string &file2);
     void mv(const std::string &file1, const std::string &file2);

@@ -6,12 +6,10 @@
 #include "Constants.hpp"
 #include "FileSystem.hpp"
 
-FileSystem *fs = nullptr;
+volatile sig_atomic_t exit_flag = 0;
 
 void end(int id){
-    delete fs;
-    std::cout << "File system closed successfully" << std::endl;
-    exit(EXIT_SUCCESS);
+    exit_flag = 1;
 }
 
 int main(int argc, char *argv[]){
@@ -26,10 +24,10 @@ int main(int argc, char *argv[]){
     signal(SIGTERM, end);
 
     // Init file system
-    fs = new FileSystem(argv[1]);
+    auto *fs = new FileSystem(argv[1]);
 
     // Loop
-    while (true){
+    while (!exit_flag){
         bool valid = false;
         std::string line;
 
@@ -48,7 +46,6 @@ int main(int argc, char *argv[]){
         // Skip or exit
         if (command.empty()) continue;
         if (command[0] == "exit"){
-            end(SIGTERM);
             break;
         }
 
@@ -108,6 +105,9 @@ int main(int argc, char *argv[]){
             continue;
         }
     }
+
+    delete fs;
+    std::cout << "File system closed successfully" << std::endl;
 
     return EXIT_SUCCESS;
 }

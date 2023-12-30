@@ -35,6 +35,10 @@ Directory::Directory(std::array<unsigned char, CLUSTER_SIZE> &data){
     parent = content[1]->inode;
 }
 
+Directory::~Directory(){
+    for (auto *file : content) delete file;
+}
+
 void Directory::add_file(const std::string &name, uint32_t inode){
     content.emplace_back(new DirectoryItem(name, inode));
 }

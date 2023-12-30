@@ -2,6 +2,7 @@
 #define ZOS_SEMESTRALKA_DIRECTORY_HPP
 
 #include <vector>
+#include <array>
 
 #include "DirectoryItem.hpp"
 
@@ -11,6 +12,7 @@ private:
 public:
     Directory(uint32_t self_inode, uint32_t parent_inode);
     Directory(std::array<unsigned char, CLUSTER_SIZE> &data);
+    ~Directory();
 
     void add_file(const std::string &name, uint32_t inode);
     bool remove_file(const std::string &name);
