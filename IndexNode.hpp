@@ -28,6 +28,7 @@ public:
     void reset();
     void set_directory(uint32_t block);
 
+    std::string occupied_blocks() const;
     std::string to_string() const;
 };
 

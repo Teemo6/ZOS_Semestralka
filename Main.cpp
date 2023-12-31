@@ -1,9 +1,7 @@
 #include <iostream>
-#include <sstream>
 #include <csignal>
-#include <vector>
 
-#include "Constants.hpp"
+#include "InputParser.hpp"
 #include "FileSystem.hpp"
 
 volatile sig_atomic_t exit_flag = 0;
@@ -28,82 +26,13 @@ int main(int argc, char *argv[]){
 
     // Loop
     while (!exit_flag){
-        bool valid = false;
-        std::string line;
-
         // Get input
+        std::string line;
         std::cout << fs->get_name() << "> ";
         std::getline(std::cin, line);
 
-        // Build command vector
-        std::istringstream iss(line);
-        std::vector<std::string> command;
-        std::string part;
-        while (iss >> part){
-            command.push_back(part);
-        }
-
-        // Skip or exit
-        if (command.empty()) continue;
-        if (command[0] == "exit"){
-            break;
-        }
-
-        // Valid command
-        if (COMMANDS.count(command[0]) != 0){
-            if (command.size() != COMMANDS.at(command[0])){
-                std::cout << "Invalid number of parameters, expected " << std::to_string(COMMANDS.at(command[0]) - 1) << ", got " << command.size() - 1 << std::endl;
-                continue;
-            }
-            valid = true;
-        }
-        if (command[0] == "ls" && (command.size() == 1 || command.size() == 2)){
-            valid = true;
-        }
-
-        if (!valid){
-            std::cout << "Invalid command '" << command[0] << "'" << std::endl;
-            continue;
-        }
-
-        // Handle command
-        if (command[0] == "mkdir"){
-            fs->mkdir(command[1]);
-            continue;
-        }
-
-        if (command[0] == "rmdir"){
-            fs->rmdir(command[1]);
-            continue;
-        }
-
-        if (command[0] == "ls"){
-            if (command.size() == 1) fs->ls("");
-            else fs->ls(command[1]);
-            continue;
-        }
-
-        if (command[0] == "cd"){
-            fs->cd(command[1]);
-            continue;
-        }
-
-        if (command[0] == "pwd"){
-            fs->pwd();
-            continue;
-        }
-
-        if (command[0] == "format"){
-            uint32_t size;
-            try{
-                size = std::stoi(command[1]);
-            } catch (const std::exception &e){
-                std::cout << "Invalid parameter '" << command[1] << "'" << std::endl;
-                continue;
-            }
-            fs->format(size);
-            continue;
-        }
+        // Parse input
+        if (!InputParser::parse_input(line, fs)) break;
     }
 
     delete fs;

@@ -36,21 +36,22 @@ public:
     std::string get_name() const;
 
     void free_inode(uint32_t id);
-    uint32_t get_dir_from_path(const std::string &path);
+    uint32_t get_directory_data(const std::string &path);
+    std::array<std::string, 2> parse_path_and_name(std::string &path);
 
     void cp(const std::string &file1, const std::string &file2);
-    void mv(const std::string &file1, const std::string &file2);
+    void mv(std::string &source, std::string &dest);
     void rm(const std::string &file);
-    void mkdir(const std::string &dir_name);
-    void rmdir(const std::string &dir_name);
+    void mkdir(std::string &dir_name);
+    void rmdir(std::string &dir_name);
     void ls(const std::string &dir_name);
     void cat(const std::string &file);
     void cd(const std::string &dir_name);
     void pwd();
-    void info(const std::string &file);
+    void info(std::string &file);
     void incp(const std::string &file1, const std::string &file2);
     void outcp(const std::string &file1, const std::string &file2);
-    void load(const std::string &file);
+    void ln(const std::string &file1, const std::string &file2);
     void format(uint32_t size);
 };
 

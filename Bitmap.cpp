@@ -29,6 +29,7 @@ uint32_t Bitmap::get_free(){
             }
             if (!data[set][bit]){
                 data[set][bit] = true;
+                std::cout << "assigned " << pos << std::endl;
                 return pos;
             }
         }

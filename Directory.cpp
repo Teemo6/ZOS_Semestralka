@@ -39,11 +39,15 @@ Directory::~Directory(){
     for (auto *file : content) delete file;
 }
 
+bool Directory::is_empty(){
+    return content.size() == 2;
+}
+
 void Directory::add_file(const std::string &name, uint32_t inode){
     content.emplace_back(new DirectoryItem(name, inode));
 }
 
-bool Directory::remove_file(const std::string &name){
+void Directory::remove_file(const std::string &name){
     int to_remove = -1;
     for (int i = 2; i < content.size(); i++){
         auto *file = content[i];
@@ -53,10 +57,9 @@ bool Directory::remove_file(const std::string &name){
         }
     }
     if (to_remove != -1) {
+        delete content[to_remove];
         content.erase(content.begin() + to_remove);
-        return true;
     }
-    return false;
 }
 
 uint32_t Directory::get_file_inode(const std::string &name){

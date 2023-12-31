@@ -1,6 +1,7 @@
 #include <utility>
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #include "FileSystem.hpp"
 #include "IndexNode.hpp"
@@ -13,11 +14,11 @@ FileSystem::FileSystem(std::string new_name){
     inode_bitmap = nullptr;
     data_bitmap = nullptr;
     curr_dir = nullptr;
-    inode_vector = std::vector<IndexNode *>();
-    data_vector = std::vector<std::array<unsigned char, CLUSTER_SIZE>>();
+    inode_vector = std::vector<IndexNode *>{};
+    data_vector = std::vector<std::array<unsigned char, CLUSTER_SIZE>>{};
 
     std::ifstream in_file(fs_name.c_str(), std::ios::binary);
-    if (in_file.is_open()){
+    if (in_file.is_open() && in_file.peek() != std::ifstream::traits_type::eof()){
         initialized = true;
         uint32_t ints, bits;
 
@@ -96,7 +97,7 @@ void FileSystem::free_inode(uint32_t id){
     inode_vector[id]->reset();
 }
 
-uint32_t FileSystem::get_dir_from_path(const std::string &path){
+uint32_t FileSystem::get_directory_data(const std::string &path){
     // Parse path
     std::vector<std::string> tokens;
     std::istringstream iss(path);
@@ -129,6 +130,31 @@ uint32_t FileSystem::get_dir_from_path(const std::string &path){
     return data_temp;
 }
 
+std::array<std::string, 2> FileSystem::parse_path_and_name(std::string &path){
+    std::array<std::string, 2> duo;
+
+    // Remove redundant slashes at end
+    std::size_t last_char = path.find_last_not_of('/');
+    if (last_char != std::string::npos){
+        path = path.substr(0, last_char + 1);
+    }
+
+    // Separate name from path
+    std::string raw_name, raw_path;
+    size_t slash = path.find_last_of('/');
+    if (slash != std::string::npos){
+        if (slash == 0 && path.length() > 1) raw_path = path.substr(0, slash + 1);
+        else raw_path = path.substr(0, slash);
+        raw_name = path.substr(slash + 1, path.length());
+    } else {
+        raw_name = path;
+    }
+
+    duo[0] = raw_path;
+    duo[1] = raw_name;
+    return duo;
+}
+
 void FileSystem::cp(const std::string &file1, const std::string &file2){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
@@ -137,12 +163,84 @@ void FileSystem::cp(const std::string &file1, const std::string &file2){
 
 }
 
-void FileSystem::mv(const std::string &file1, const std::string &file2){
+void FileSystem::mv(std::string &source, std::string &dest){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
         return;
     }
 
+    // Get parsed path and name
+    std::array<std::string, 2> source_param = parse_path_and_name(source);
+    std::array<std::string, 2> dest_param = parse_path_and_name(dest);
+
+    // Get parent data block
+    uint32_t data_parent_source;
+    if (!source_param[0].empty()){
+        data_parent_source = get_directory_data(source_param[0]);
+        if (data_parent_source == INVALID) return;
+    } else data_parent_source = inode_vector[curr_dir->self]->direct1;
+
+    uint32_t data_parent_dest;
+    if (!dest_param[0].empty()){
+        data_parent_dest = get_directory_data(dest_param[0]);
+        if (data_parent_dest == INVALID) return;
+    } else data_parent_dest = inode_vector[curr_dir->self]->direct1;
+
+    // Empty name
+    if (source_param[1].empty() || dest_param[1].empty()){
+        std::cout << "File not found" << std::endl;
+        return;
+    }
+
+    // Non-existing source file, already existing destination file
+    auto *source_parent = new Directory(data_vector[data_parent_source]);
+    uint32_t to_move = source_parent->get_file_inode(source_param[1]);
+
+    auto *dest_parent = new Directory(data_vector[data_parent_dest]);
+    uint32_t to_replace = dest_parent->get_file_inode(dest_param[1]);
+
+    if (to_move == INVALID || to_replace != INVALID){
+        std::cout << "Cannot move file" << std::endl;
+        delete source_parent;
+        delete dest_parent;
+        return;
+    }
+
+    // Source is directory
+    if (inode_vector[to_move]->is_directory){
+        std::cout << "Source not file" << std::endl;
+        delete source_parent;
+        delete dest_parent;
+        return;
+    }
+
+    // Update parent directories
+    uint32_t file_inode = source_parent->get_file_inode(source_param[1]);
+    source_parent->remove_file(source_param[1]);
+    uint32_t source_parent_data = inode_vector[source_parent->self]->direct1;
+    data_vector[source_parent_data] = source_parent->serialize();
+
+    dest_parent->add_file(dest_param[1], file_inode);
+    uint32_t dest_parent_data = inode_vector[dest_parent->self]->direct1;
+    if (source_parent_data == dest_parent_data) {
+        dest_parent->remove_file(source_param[1]);
+    }
+    data_vector[dest_parent_data] = dest_parent->serialize();
+
+
+    // Update current directory
+    if (source_parent->self == curr_dir->self){
+        delete curr_dir;
+        curr_dir = new Directory(data_vector[source_parent_data]);
+    }
+    if (dest_parent->self == curr_dir->self){
+        delete curr_dir;
+        curr_dir = new Directory(data_vector[dest_parent_data]);
+    }
+    delete source_parent;
+    delete dest_parent;
+
+    std::cout << "Ok" << std::endl;
 }
 
 void FileSystem::rm(const std::string &file){
@@ -153,73 +251,137 @@ void FileSystem::rm(const std::string &file){
 
 }
 
-void FileSystem::mkdir(const std::string &dir_name){
+void FileSystem::mkdir(std::string &dir_name){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
         return;
     }
 
-    uint32_t inode_id = inode_bitmap->get_free();
-    if (inode_id == INVALID){
-        std::cout << "Cannot create directory - out of inodes" << std::endl;
+    // Get parsed path and name
+    std::array<std::string, 2> param = parse_path_and_name(dir_name);
+
+    // Get parent data block
+    uint32_t data_parent;
+    if (!param[0].empty()) {
+        data_parent = get_directory_data(param[0]);
+        if (data_parent == INVALID) return;
+    } else data_parent = inode_vector[curr_dir->self]->direct1;
+
+    // Empty name
+    if (param[1].empty()){
+        std::cout << "Path not found" << std::endl;
         return;
     }
 
+    // Existing name
+    auto *parent = new Directory(data_vector[data_parent]);
+    if (parent->get_file_inode(param[1]) != INVALID){
+        std::cout << "Exist" << std::endl;
+        delete parent;
+        return;
+    }
+
+    // Assign inode
+    uint32_t inode_id = inode_bitmap->get_free();
+    if (inode_id == INVALID){
+        std::cout << "Cannot create directory - out of inodes" << std::endl;
+        delete parent;
+        return;
+    }
+
+    // Assign data block
     uint32_t data_id = data_bitmap->get_free();
     if (data_id == INVALID){
         std::cout << "Cannot create directory - out of data blocks" << std::endl;
         inode_bitmap->set_free(inode_id);
+        delete parent;
         return;
     }
 
-    // TODO fs_name check
-
-    // Create new directory
-    auto *new_dir = new Directory(inode_id, curr_dir->self);
+    // Write new directory to data block
+    auto *new_dir = new Directory(inode_id, parent->self);
     inode_vector[inode_id]->set_directory(data_id);
     data_vector[data_id] = new_dir->serialize();
 
     // Update parent directory
-    uint32_t curr_data = inode_vector[curr_dir->self]->direct1;
-    curr_dir->add_file(dir_name, inode_id);
-    data_vector[curr_data] = curr_dir->serialize();
+    uint32_t parent_data = inode_vector[parent->self]->direct1;
+    parent->add_file(param[1], inode_id);
+    data_vector[parent_data] = parent->serialize();
+
+    // Update current directory
+    if (parent->self == curr_dir->self){
+        delete curr_dir;
+        curr_dir = new Directory(data_vector[parent_data]);
+    }
+    delete parent;
+    delete new_dir;
 
     std::cout << "Ok" << std::endl;
 }
 
-void FileSystem::rmdir(const std::string &dir_name){
+void FileSystem::rmdir(std::string &dir_name){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
         return;
     }
 
-    uint32_t id;
+    // Get parsed path and name
+    std::array<std::string, 2> param = parse_path_and_name(dir_name);
 
-    // TODO absolute
-    if (dir_name[0] == '/'){
-        std::cout << "ABSOLUTE" << std::endl;
+    // Get parent data block
+    uint32_t data_parent;
+    if (!param[0].empty()) {
+        data_parent = get_directory_data(param[0]);
+        if (data_parent == INVALID) return;
+    } else data_parent = inode_vector[curr_dir->self]->direct1;
+
+    // Empty name
+    if (param[1].empty()){
+        std::cout << "Path not found" << std::endl;
         return;
-    } else {
-        id = curr_dir->get_file_inode(dir_name);
     }
 
-    if (id == INVALID){
+    // Non-existing name
+    auto *parent = new Directory(data_vector[data_parent]);
+    uint32_t to_remove = parent->get_file_inode(param[1]);
+    if (to_remove == INVALID) {
         std::cout << "File not found" << std::endl;
+        delete parent;
         return;
     }
 
-    // TODO non empty
-
-    if (curr_dir->remove_file(dir_name)){
-        free_inode(id);
-        uint32_t curr_data = inode_vector[curr_dir->self]->direct1;
-        data_vector[curr_data] = curr_dir->serialize();
-    } else {
-        std::cout << "File not found" << std::endl;
+    // Directory contains some files
+    auto *dir = new Directory(data_vector[inode_vector[to_remove]->direct1]);
+    if (!dir->is_empty()) {
+        std::cout << "Cannot remove directory - not empty" << std::endl;
+        delete parent;
+        delete dir;
+        return;
     }
+
+    // Update current directory
+    if (curr_dir->self == to_remove){
+        delete curr_dir;
+        curr_dir = new Directory(data_vector[0]);
+    }
+
+    // Update parent directory
+    parent->remove_file(param[1]);
+    free_inode(to_remove);
+    uint32_t parent_data = inode_vector[parent->self]->direct1;
+    data_vector[parent_data] = parent->serialize();
+
+    // Update current directory
+    if (parent->self == curr_dir->self){
+        delete curr_dir;
+        curr_dir = new Directory(data_vector[parent_data]);
+    }
+    delete parent;
+    delete dir;
+
+    std::cout << "Ok" << std::endl;
 }
 
-// DONE
 void FileSystem::ls(const std::string &dir_name){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
@@ -236,7 +398,7 @@ void FileSystem::ls(const std::string &dir_name){
     }
 
     // Get relevant data block
-    uint32_t data_temp = get_dir_from_path(dir_name);
+    uint32_t data_temp = get_directory_data(dir_name);
     if (data_temp == INVALID) return;
 
     // Print content
@@ -256,8 +418,6 @@ void FileSystem::cat(const std::string &file){
 
 }
 
-
-// DONE
 void FileSystem::cd(const std::string &dir_name){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
@@ -265,7 +425,7 @@ void FileSystem::cd(const std::string &dir_name){
     }
 
     // Get relevant data block
-    uint32_t data_temp = get_dir_from_path(dir_name);
+    uint32_t data_temp = get_directory_data(dir_name);
     if (data_temp == INVALID) return;
 
     // Set new current directory
@@ -275,7 +435,6 @@ void FileSystem::cd(const std::string &dir_name){
     std::cout << "Ok" << std::endl;
 }
 
-// DONE
 void FileSystem::pwd(){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
@@ -308,12 +467,43 @@ void FileSystem::pwd(){
     }
 }
 
-void FileSystem::info(const std::string &file){
+void FileSystem::info(std::string &file){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
         return;
     }
 
+    // Get parsed path and name
+    std::array<std::string, 2> param = parse_path_and_name(file);
+
+    // Get parent data block
+    uint32_t data_parent;
+    if (!param[0].empty()) {
+        data_parent = get_directory_data(param[0]);
+        if (data_parent == INVALID) return;
+    } else data_parent = inode_vector[curr_dir->self]->direct1;
+
+    // Empty name
+    if (param[1].empty()){
+        std::cout << "File not found" << std::endl;
+        return;
+    }
+
+    // Non-existing name
+    auto *parent = new Directory(data_vector[data_parent]);
+    uint32_t id = parent->get_file_inode(param[1]);
+    if (id == INVALID) {
+        std::cout << "File not found" << std::endl;
+        return;
+    }
+
+    // Print content
+    std::stringstream ss;
+    auto *file_inode = inode_vector[id];
+    ss << param[1] << " - " << file_inode->file_size << " - i-node " << id << " - " << file_inode->occupied_blocks();
+    std::cout << ss.str() << std::endl;
+
+    delete parent;
 }
 
 void FileSystem::incp(const std::string &file1, const std::string &file2){
@@ -332,7 +522,7 @@ void FileSystem::outcp(const std::string &file1, const std::string &file2){
 
 }
 
-void FileSystem::load(const std::string &file){
+void FileSystem::ln(const std::string &file1, const std::string &file2){
     if (!initialized){
         std::cout << CALL_FORMAT_MESSAGE << std::endl;
         return;
@@ -341,6 +531,11 @@ void FileSystem::load(const std::string &file){
 }
 
 void FileSystem::format(uint32_t size){
+    if (size < MINIMUM_FORMAT_SIZE){
+        std::cout << "Cannot create file" << std::endl;
+        return;
+    }
+
     delete sb;
     delete inode_bitmap;
     delete data_bitmap;
@@ -356,8 +551,7 @@ void FileSystem::format(uint32_t size){
     data_bitmap = new Bitmap(sb->cluster_count);
 
     for (uint32_t i = 0; i < sb->inode_count; i++){
-        auto *inode = new IndexNode(i);
-        inode_vector.emplace_back(inode);
+        inode_vector.emplace_back(new IndexNode(i));
     }
 
     for (uint32_t i = 0; i < sb->cluster_count; i++){
@@ -382,6 +576,8 @@ void FileSystem::format(uint32_t size){
 
     initialized = true;
     write_all();
+
+    std::cout << "Ok" << std::endl;
 }
 
 ////////////////////////////////////
