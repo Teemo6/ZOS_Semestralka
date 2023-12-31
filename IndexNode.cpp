@@ -3,7 +3,7 @@
 #include "IndexNode.hpp"
 
 IndexNode::IndexNode(uint32_t id) : node_id(id){
-    is_directory = false;
+    is_directory = FALSE;
     references = INVALID;
     file_size = INVALID;
 
@@ -17,7 +17,7 @@ IndexNode::IndexNode(uint32_t id) : node_id(id){
 }
 
 void IndexNode::reset(){
-    is_directory = false;
+    is_directory = FALSE;
     references = INVALID;
     file_size = INVALID;
 
@@ -31,7 +31,7 @@ void IndexNode::reset(){
 }
 
 void IndexNode::set_directory(uint32_t block){
-    is_directory = true;
+    is_directory = TRUE;
     file_size = CLUSTER_SIZE;
     direct1 = block;
 }

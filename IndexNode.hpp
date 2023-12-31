@@ -13,7 +13,7 @@ public:
     explicit IndexNode(uint32_t id);
 
     uint32_t node_id;
-    bool is_directory;
+    uint32_t is_directory;
     uint32_t references;
     uint32_t file_size;
 

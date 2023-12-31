@@ -5,8 +5,6 @@
 #include "Superblock.hpp"
 #include "IndexNode.hpp"
 
-
-
 Superblock::Superblock(){
     strncpy((char *)signature, "", sizeof(signature));
     disk_size = 0;

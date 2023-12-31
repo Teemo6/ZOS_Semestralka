@@ -1,10 +1,6 @@
 #ifndef ZOS_SEMESTRALKA_FILESYSTEM_H
 #define ZOS_SEMESTRALKA_FILESYSTEM_H
 
-#include <string>
-#include <fstream>
-#include <vector>
-
 #include "Superblock.hpp"
 #include "DirectoryItem.hpp"
 #include "Directory.hpp"
@@ -17,27 +13,26 @@ private:
     std::string fs_name;
     std::ofstream out_file;
 
-    Directory *curr_dir;
-
-    void write_all();
-
-public:
-    explicit FileSystem(std::string name);
-    ~FileSystem();
-
-
     Superblock *sb;
     Bitmap *inode_bitmap;
     Bitmap *data_bitmap;
     std::vector<IndexNode *> inode_vector;
     std::vector<std::array<unsigned char, CLUSTER_SIZE>> data_vector;
 
-    bool is_initialized() const;
-    std::string get_name() const;
+    Directory *curr_dir;
+
+    void write_all();
 
     void free_inode(uint32_t id);
     uint32_t get_directory_data(const std::string &path);
     std::array<std::string, 2> parse_path_and_name(std::string &path);
+
+public:
+    explicit FileSystem(std::string name);
+    ~FileSystem();
+
+    bool is_initialized() const;
+    std::string get_name() const;
 
     void cp(const std::string &file1, const std::string &file2);
     void mv(std::string &source, std::string &dest);
@@ -54,6 +49,5 @@ public:
     void ln(const std::string &file1, const std::string &file2);
     void format(uint32_t size);
 };
-
 
 #endif
