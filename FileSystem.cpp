@@ -206,15 +206,7 @@ void FileSystem::mv(std::string &source, std::string &dest){
         return;
     }
 
-    // Source is directory
-    if (inode_vector[to_move]->is_directory){
-        std::cout << "Source not file" << std::endl;
-        delete source_parent;
-        delete dest_parent;
-        return;
-    }
-
-    // Update parent directories
+    // Update source and dest directories
     uint32_t file_inode = source_parent->get_file_inode(source_param[1]);
     source_parent->remove_file(source_param[1]);
     uint32_t source_parent_data = inode_vector[source_parent->self]->direct1;
@@ -227,6 +219,14 @@ void FileSystem::mv(std::string &source, std::string &dest){
     }
     data_vector[dest_parent_data] = dest_parent->serialize();
 
+    // Update parent directory
+    if (inode_vector[to_move]->is_directory){
+        uint32_t source_dir_data = inode_vector[to_move]->direct1;
+        auto *source_dir = new Directory(data_vector[source_dir_data]);
+        source_dir->update_parent(dest_parent->self);
+        data_vector[source_dir_data] = source_dir->serialize();
+        delete source_dir;
+    }
 
     // Update current directory
     if (source_parent->self == curr_dir->self){

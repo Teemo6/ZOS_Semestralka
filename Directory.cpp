@@ -62,6 +62,10 @@ void Directory::remove_file(const std::string &name){
     }
 }
 
+void Directory::update_parent(uint32_t new_inode){
+    content[1]->inode = new_inode;
+}
+
 uint32_t Directory::get_file_inode(const std::string &name){
     for (auto file : content){
         if (reinterpret_cast<const char*>(file->name) == name){

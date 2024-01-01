@@ -39,14 +39,21 @@ bool InputParser::parse_input(const std::string &input, FileSystem *fs){
     }
 
     // Handle command
-    if (command[0] == "mv") fs->mv(command[1], command[2]);
+    else if (command[0] == "cp") fs->cp(command[1], command[2]);
+    else if (command[0] == "mv") fs->mv(command[1], command[2]);
+    else if (command[0] == "rm") fs->rm(command[1]);
     else if (command[0] == "mkdir") fs->mkdir(command[1]);
     else if (command[0] == "rmdir") fs->rmdir(command[1]);
     else if (command[0] == "ls" && command.size() == 1) fs->ls("");
     else if (command[0] == "ls" && command.size() == 2) fs->ls(command[1]);
+    else if (command[0] == "cat") fs->cat(command[1]);
     else if (command[0] == "cd") fs->cd(command[1]);
     else if (command[0] == "pwd") fs->pwd();
     else if (command[0] == "info") fs->info(command[1]);
+    else if (command[0] == "incp") fs->incp(command[1], command[2]);
+    else if (command[0] == "outcp") fs->outcp(command[1], command[2]);
+    else if (command[0] == "ln") fs->ln(command[1], command[2]);
+
     else if (command[0] == "load"){
         if (!loading) {
             loading = true;
@@ -55,6 +62,7 @@ bool InputParser::parse_input(const std::string &input, FileSystem *fs){
             std::cout << "Already loading from file" << std::endl;
         }
     }
+
     else if (command[0] == "format"){
         uint32_t size;
         try{
