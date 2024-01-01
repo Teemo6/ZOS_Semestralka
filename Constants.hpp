@@ -5,8 +5,9 @@
 
 const uint32_t STRING_LENGHT = 12;
 
-const uint32_t FREE = UINT32_MAX;
-const uint32_t INVALID = UINT32_MAX - 1;
+const uint32_t INVALID = UINT32_MAX;
+const uint32_t TRUE = UINT32_MAX - 1;
+const uint32_t FALSE = 0;
 
 const std::string EMPTY_STRING;
 

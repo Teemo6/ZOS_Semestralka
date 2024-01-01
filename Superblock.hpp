@@ -12,12 +12,9 @@ private:
 public:
     Superblock();
 
-    void load();
     void init(uint32_t size);
 
     std::string to_string();
-
-
 
     unsigned char signature[STRING_LENGHT]{};
     uint32_t disk_size;

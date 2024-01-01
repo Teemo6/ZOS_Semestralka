@@ -9,6 +9,7 @@
 bool InputParser::loading = false;
 
 bool InputParser::parse_input(const std::string &input, FileSystem *fs){
+    // Build command vector
     std::istringstream iss(input);
     std::vector<std::string> command;
     std::string part;
@@ -33,8 +34,15 @@ bool InputParser::parse_input(const std::string &input, FileSystem *fs){
         valid = true;
     }
 
+    // Invalid command
     if (!valid){
         std::cout << "Invalid command '" << command[0] << "'" << std::endl;
+        return true;
+    }
+
+    // File system not initialized
+    if (!fs->is_initialized() && command[0] != "format" && command[0] != "load"){
+        std::cout << CALL_FORMAT_MESSAGE << std::endl;
         return true;
     }
 

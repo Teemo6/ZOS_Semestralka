@@ -1,15 +1,12 @@
-#include <utility>
 #include <iostream>
 #include <sstream>
-#include <string>
+#include <cstring>
 
 #include "FileSystem.hpp"
 #include "IndexNode.hpp"
 #include "DirectoryItem.hpp"
 
-FileSystem::FileSystem(std::string new_name){
-    fs_name = std::move(new_name);
-
+FileSystem::FileSystem(std::string new_name) : fs_name(std::move(new_name)){
     sb = new Superblock();
     inode_bitmap = nullptr;
     data_bitmap = nullptr;
@@ -44,6 +41,7 @@ FileSystem::FileSystem(std::string new_name){
         // Inodes
         for (uint32_t i = 0; i < sb->inode_count; i++){
             auto *inode = new IndexNode(i);
+            // std::memset(inode, 0, sizeof(IndexNode));
             in_file.read(reinterpret_cast<char*>(inode), sizeof(IndexNode));
             inode_vector.emplace_back(inode);
         }
@@ -149,26 +147,16 @@ std::array<std::string, 2> FileSystem::parse_path_and_name(std::string &path){
     } else {
         raw_name = path;
     }
-
     duo[0] = raw_path;
     duo[1] = raw_name;
+
     return duo;
 }
 
 void FileSystem::cp(const std::string &file1, const std::string &file2){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
-
 }
 
 void FileSystem::mv(std::string &source, std::string &dest){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
-
     // Get parsed path and name
     std::array<std::string, 2> source_param = parse_path_and_name(source);
     std::array<std::string, 2> dest_param = parse_path_and_name(dest);
@@ -232,8 +220,7 @@ void FileSystem::mv(std::string &source, std::string &dest){
     if (source_parent->self == curr_dir->self){
         delete curr_dir;
         curr_dir = new Directory(data_vector[source_parent_data]);
-    }
-    if (dest_parent->self == curr_dir->self){
+    } else if (dest_parent->self == curr_dir->self){
         delete curr_dir;
         curr_dir = new Directory(data_vector[dest_parent_data]);
     }
@@ -244,19 +231,10 @@ void FileSystem::mv(std::string &source, std::string &dest){
 }
 
 void FileSystem::rm(const std::string &file){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
 
 }
 
 void FileSystem::mkdir(std::string &dir_name){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
-
     // Get parsed path and name
     std::array<std::string, 2> param = parse_path_and_name(dir_name);
 
@@ -320,11 +298,6 @@ void FileSystem::mkdir(std::string &dir_name){
 }
 
 void FileSystem::rmdir(std::string &dir_name){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
-
     // Get parsed path and name
     std::array<std::string, 2> param = parse_path_and_name(dir_name);
 
@@ -383,11 +356,6 @@ void FileSystem::rmdir(std::string &dir_name){
 }
 
 void FileSystem::ls(const std::string &dir_name){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
-
     // Empty parameter, print current directory content
     if (dir_name.empty()){
         for (auto file : curr_dir->content){
@@ -411,19 +379,10 @@ void FileSystem::ls(const std::string &dir_name){
 }
 
 void FileSystem::cat(const std::string &file){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
 
 }
 
 void FileSystem::cd(const std::string &dir_name){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
-
     // Get relevant data block
     uint32_t data_temp = get_directory_data(dir_name);
     if (data_temp == INVALID) return;
@@ -436,11 +395,6 @@ void FileSystem::cd(const std::string &dir_name){
 }
 
 void FileSystem::pwd(){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
-
     // Build path from curr_dir
     std::vector<std::string> path;
     uint32_t id_self = curr_dir->self;
@@ -468,11 +422,6 @@ void FileSystem::pwd(){
 }
 
 void FileSystem::info(std::string &file){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
-
     // Get parsed path and name
     std::array<std::string, 2> param = parse_path_and_name(file);
 
@@ -507,26 +456,14 @@ void FileSystem::info(std::string &file){
 }
 
 void FileSystem::incp(const std::string &file1, const std::string &file2){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
 
 }
 
 void FileSystem::outcp(const std::string &file1, const std::string &file2){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
 
 }
 
 void FileSystem::ln(const std::string &file1, const std::string &file2){
-    if (!initialized){
-        std::cout << CALL_FORMAT_MESSAGE << std::endl;
-        return;
-    }
 
 }
 
