@@ -5,7 +5,8 @@
 IndexNode::IndexNode(uint32_t id) : node_id(id){
     is_directory = FALSE;
     references = INVALID;
-    file_size = INVALID;
+    raw_size = INVALID;
+    fs_size = INVALID;
 
     direct1 = INVALID;
     direct2 = INVALID;
@@ -19,7 +20,8 @@ IndexNode::IndexNode(uint32_t id) : node_id(id){
 void IndexNode::reset(){
     is_directory = FALSE;
     references = INVALID;
-    file_size = INVALID;
+    raw_size = INVALID;
+    fs_size = INVALID;
 
     direct1 = INVALID;
     direct2 = INVALID;
@@ -32,20 +34,37 @@ void IndexNode::reset(){
 
 void IndexNode::set_directory(uint32_t block){
     is_directory = TRUE;
-    file_size = CLUSTER_SIZE;
+    fs_size = CLUSTER_SIZE;
     direct1 = block;
 }
 
+void IndexNode::set_size(uint32_t raw, uint32_t fs){
+    raw_size = raw;
+    fs_size = fs;
+}
+
+bool IndexNode::write_direct_data(uint32_t value){
+    if (is_directory) return false;
+
+    if (direct1 == INVALID) direct1 = value;
+    else if (direct2 == INVALID) direct2 = value;
+    else if (direct3 == INVALID) direct3 = value;
+    else if (direct4 == INVALID) direct4 = value;
+    else if (direct5 == INVALID) direct5 = value;
+    else return false;
+    return true;
+}
+
 std::string IndexNode::occupied_blocks() const{
-    std::stringstream ss;
+    int count = 0;
 
-    if (direct1 != INVALID) ss << "[" << direct1 << "] ";
-    if (direct2 != INVALID) ss << "[" << direct2 << "] ";
-    if (direct3 != INVALID) ss << "[" << direct3 << "] ";
-    if (direct4 != INVALID) ss << "[" << direct4 << "] ";
-    if (direct5 != INVALID) ss << "[" << direct5 << "] ";
+    if (direct1 != INVALID) count++;
+    if (direct2 != INVALID) count++;
+    if (direct3 != INVALID) count++;
+    if (direct4 != INVALID) count++;
+    if (direct5 != INVALID) count++;
 
-    return ss.str();
+    return std::to_string(count);
 }
 
 std::string IndexNode::to_string() const{
@@ -54,7 +73,7 @@ std::string IndexNode::to_string() const{
     ss << "id: " << node_id
        << ", directory: " << is_directory
        << ", references: " << references
-       << ", size: " << file_size
+       << ", size: " << fs_size
        << ", direct1: " << direct1
        << ", direct2: " << direct2
        << ", direct3: " << direct3

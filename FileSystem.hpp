@@ -1,6 +1,8 @@
 #ifndef ZOS_SEMESTRALKA_FILESYSTEM_H
 #define ZOS_SEMESTRALKA_FILESYSTEM_H
 
+#include <deque>
+
 #include "Superblock.hpp"
 #include "DirectoryItem.hpp"
 #include "Directory.hpp"
@@ -24,7 +26,8 @@ private:
     void write_all();
 
     void free_inode(uint32_t id);
-    uint32_t get_directory_data(const std::string &path);
+    std::deque<std::array<unsigned char, CLUSTER_SIZE>> get_file_content(uint32_t inode);
+    uint32_t get_directory_data_block(const std::string &path);
     std::array<std::string, 2> parse_path_and_name(std::string &path);
 
 public:
@@ -40,12 +43,12 @@ public:
     void mkdir(std::string &dir_name);
     void rmdir(std::string &dir_name);
     void ls(const std::string &dir_name);
-    void cat(const std::string &file);
+    void cat(std::string &file);
     void cd(const std::string &dir_name);
     void pwd();
     void info(std::string &file);
-    void incp(const std::string &file1, const std::string &file2);
-    void outcp(const std::string &file1, const std::string &file2);
+    void incp(const std::string &system, std::string &virt);
+    void outcp(std::string &virt, const std::string &system);
     void ln(const std::string &file1, const std::string &file2);
     void format(uint32_t size);
 };

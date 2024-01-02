@@ -3,12 +3,10 @@
 
 ReferenceBlock::ReferenceBlock(){
     references = std::vector<uint32_t>();
-    count = 0;
 }
 
 ReferenceBlock::ReferenceBlock(std::array<unsigned char, CLUSTER_SIZE> &data){
     references = std::vector<uint32_t>();
-    count = 0;
 
     for (int i = 0; i < data.size(); i += sizeof(uint32_t)) {
         uint32_t ref = 0;
@@ -17,15 +15,24 @@ ReferenceBlock::ReferenceBlock(std::array<unsigned char, CLUSTER_SIZE> &data){
         }
         if (ref == 0) break;
         references.emplace_back(ref);
-        count++;
     }
 }
 
 void ReferenceBlock::add_reference(uint32_t ref){
     if (references.size() < CLUSTER_SIZE / sizeof(uint32_t)){
         references.emplace_back(ref);
-        count++;
     }
+}
+
+uint32_t ReferenceBlock::get_reference(uint32_t pos) const{
+    if (pos < CLUSTER_SIZE / sizeof(uint32_t)) {
+        return references[pos];
+    }
+    return INVALID;
+}
+
+uint32_t ReferenceBlock::get_reference_count() const{
+    return references.size();
 }
 
 std::array<unsigned char, CLUSTER_SIZE> ReferenceBlock::serialize(){

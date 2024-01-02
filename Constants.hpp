@@ -13,17 +13,20 @@ const std::string EMPTY_STRING;
 
 const uint32_t CLUSTER_SIZE = 512;
 const uint32_t INODE_COUNT = 1024;
-
-const uint32_t MINIMUM_FORMAT_SIZE = 50000;
-
 const uint32_t BITMAP_BITS = 32;
 
+const uint32_t DIRECT_REF = 5;
+const uint32_t INDIRECT_1_REF = CLUSTER_SIZE/sizeof(uint32_t);
+const uint32_t INDIRECT_2_REF = INDIRECT_1_REF * (CLUSTER_SIZE/sizeof(uint32_t));
+
+const uint32_t MAX_FILE_SIZE =
+        DIRECT_REF * CLUSTER_SIZE +
+        INDIRECT_1_REF * CLUSTER_SIZE +
+        INDIRECT_2_REF * CLUSTER_SIZE;
+
+const uint32_t MINIMUM_FORMAT_SIZE = 50000;
 const std::string CALL_FORMAT_MESSAGE = "File system not initialized, call 'format' first";
 
-
-
-
-const int MOST_COMMAND_ARG = 3;
 const std::unordered_map<std::string, int> COMMANDS = {
         {"cp",      3},
         {"mv",      3},

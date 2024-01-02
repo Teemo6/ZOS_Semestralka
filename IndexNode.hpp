@@ -15,7 +15,8 @@ public:
     uint32_t node_id;
     uint32_t is_directory;
     uint32_t references;
-    uint32_t file_size;
+    uint32_t raw_size;
+    uint32_t fs_size;
 
     uint32_t direct1;
     uint32_t direct2;
@@ -27,6 +28,8 @@ public:
 
     void reset();
     void set_directory(uint32_t block);
+    void set_size(uint32_t raw, uint32_t fs);
+    bool write_direct_data(uint32_t value);
 
     std::string occupied_blocks() const;
     std::string to_string() const;

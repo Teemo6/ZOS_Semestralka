@@ -19,14 +19,27 @@ uint32_t Bitmap::get_bits(uint32_t pos){
     return static_cast<uint32_t>(data[pos].to_ulong());
 }
 
+bool Bitmap::check_free(uint32_t count){
+    uint32_t pos, free = 0;
+    for (int set = 0; set < data.size(); set++){
+        for (int bit = 0; bit < BITMAP_BITS; bit++){
+            pos = set * BITMAP_BITS + bit;
+            if (pos >= bit_count) return free >= count;
+            if (!data[set][bit]){
+                free++;
+                if (free >= count) return true;
+            }
+        }
+    }
+    return false;
+}
+
 uint32_t Bitmap::get_free(){
     uint32_t pos;
     for (int set = 0; set < data.size(); set++){
         for (int bit = 0; bit < BITMAP_BITS; bit++){
             pos = set * BITMAP_BITS + bit;
-            if (pos >= bit_count){
-                return INVALID;
-            }
+            if (pos >= bit_count) return INVALID;
             if (!data[set][bit]){
                 data[set][bit] = true;
                 std::cout << "assigned " << pos << std::endl;

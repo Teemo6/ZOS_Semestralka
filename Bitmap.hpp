@@ -19,6 +19,7 @@ public:
 
     uint32_t get_bits(uint32_t pos);
 
+    bool check_free(uint32_t count);
     uint32_t get_free();
     void set_free(uint32_t pos);
 

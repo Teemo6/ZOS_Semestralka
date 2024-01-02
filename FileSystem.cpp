@@ -1,10 +1,11 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>
+#include <search.h>
 
 #include "FileSystem.hpp"
 #include "IndexNode.hpp"
-#include "DirectoryItem.hpp"
+#include "ReferenceBlock.hpp"
 
 FileSystem::FileSystem(std::string new_name) : fs_name(std::move(new_name)){
     sb = new Superblock();
@@ -95,7 +96,42 @@ void FileSystem::free_inode(uint32_t id){
     inode_vector[id]->reset();
 }
 
-uint32_t FileSystem::get_directory_data(const std::string &path){
+std::deque<std::array<unsigned char, CLUSTER_SIZE>> FileSystem::get_file_content(uint32_t inode){
+    std::deque<std::array<unsigned char, CLUSTER_SIZE>> all_data;
+    auto *file = inode_vector[inode];
+
+    // Direct block
+    if (file->direct1 != INVALID) all_data.push_back(data_vector[file->direct1]);
+    if (file->direct2 != INVALID) all_data.push_back(data_vector[file->direct2]);
+    if (file->direct3 != INVALID) all_data.push_back(data_vector[file->direct3]);
+    if (file->direct4 != INVALID) all_data.push_back(data_vector[file->direct4]);
+    if (file->direct5 != INVALID) all_data.push_back(data_vector[file->direct5]);
+
+    // Indirect 1 blocks
+    if (file->indirect1 != INVALID){
+        auto *ref = new ReferenceBlock(data_vector[file->indirect1]);
+        for (int i = 0; i < ref->get_reference_count(); i++){
+            all_data.push_back(data_vector[ref->get_reference(i)]);
+        }
+        delete ref;
+    }
+
+    // Indirect 2 blocks
+    if (file->indirect2 != INVALID){
+        auto *ref2 = new ReferenceBlock(data_vector[file->indirect2]);
+        for (int i = 0; i < ref2->get_reference_count(); i++){
+            auto *ref1 = new ReferenceBlock(data_vector[ref2->get_reference(i)]);
+            for (int j = 0; j < ref1->get_reference_count(); j++){
+                all_data.push_back(data_vector[ref1->get_reference(j)]);
+            }
+            delete ref1;
+        }
+        delete ref2;
+    }
+    return all_data;
+}
+
+uint32_t FileSystem::get_directory_data_block(const std::string &path){
     // Parse path
     std::vector<std::string> tokens;
     std::istringstream iss(path);
@@ -164,13 +200,13 @@ void FileSystem::mv(std::string &source, std::string &dest){
     // Get parent data block
     uint32_t data_parent_source;
     if (!source_param[0].empty()){
-        data_parent_source = get_directory_data(source_param[0]);
+        data_parent_source = get_directory_data_block(source_param[0]);
         if (data_parent_source == INVALID) return;
     } else data_parent_source = inode_vector[curr_dir->self]->direct1;
 
     uint32_t data_parent_dest;
     if (!dest_param[0].empty()){
-        data_parent_dest = get_directory_data(dest_param[0]);
+        data_parent_dest = get_directory_data_block(dest_param[0]);
         if (data_parent_dest == INVALID) return;
     } else data_parent_dest = inode_vector[curr_dir->self]->direct1;
 
@@ -241,7 +277,7 @@ void FileSystem::mkdir(std::string &dir_name){
     // Get parent data block
     uint32_t data_parent;
     if (!param[0].empty()) {
-        data_parent = get_directory_data(param[0]);
+        data_parent = get_directory_data_block(param[0]);
         if (data_parent == INVALID) return;
     } else data_parent = inode_vector[curr_dir->self]->direct1;
 
@@ -262,7 +298,7 @@ void FileSystem::mkdir(std::string &dir_name){
     // Assign inode
     uint32_t inode_id = inode_bitmap->get_free();
     if (inode_id == INVALID){
-        std::cout << "Cannot create directory - out of inodes" << std::endl;
+        std::cout << "Out of free inodes" << std::endl;
         delete parent;
         return;
     }
@@ -270,7 +306,7 @@ void FileSystem::mkdir(std::string &dir_name){
     // Assign data block
     uint32_t data_id = data_bitmap->get_free();
     if (data_id == INVALID){
-        std::cout << "Cannot create directory - out of data blocks" << std::endl;
+        std::cout << "Out of free data blocks" << std::endl;
         inode_bitmap->set_free(inode_id);
         delete parent;
         return;
@@ -304,7 +340,7 @@ void FileSystem::rmdir(std::string &dir_name){
     // Get parent data block
     uint32_t data_parent;
     if (!param[0].empty()) {
-        data_parent = get_directory_data(param[0]);
+        data_parent = get_directory_data_block(param[0]);
         if (data_parent == INVALID) return;
     } else data_parent = inode_vector[curr_dir->self]->direct1;
 
@@ -366,7 +402,7 @@ void FileSystem::ls(const std::string &dir_name){
     }
 
     // Get relevant data block
-    uint32_t data_temp = get_directory_data(dir_name);
+    uint32_t data_temp = get_directory_data_block(dir_name);
     if (data_temp == INVALID) return;
 
     // Print content
@@ -378,13 +414,49 @@ void FileSystem::ls(const std::string &dir_name){
     delete temp;
 }
 
-void FileSystem::cat(const std::string &file){
+void FileSystem::cat(std::string &file){
+    // Get parsed path and name
+    std::array<std::string, 2> param = parse_path_and_name(file);
 
+    // Get parent data block
+    uint32_t data_parent;
+    if (!param[0].empty()) {
+        data_parent = get_directory_data_block(param[0]);
+        if (data_parent == INVALID) return;
+    } else data_parent = inode_vector[curr_dir->self]->direct1;
+
+    // Empty name
+    if (param[1].empty()){
+        std::cout << "Path not found" << std::endl;
+        return;
+    }
+
+    // Existing name
+    auto *parent = new Directory(data_vector[data_parent]);
+    uint32_t file_inode = parent->get_file_inode(param[1]);
+    if (file_inode == INVALID){
+        std::cout << "File not found" << std::endl;
+        delete parent;
+        return;
+    }
+
+    // Print file content
+    std::deque<std::array<unsigned char, CLUSTER_SIZE>> content = get_file_content(file_inode);
+    std::stringstream ss;
+    while (!content.empty()){
+        for (int i = 0; i < CLUSTER_SIZE; i++){
+            ss << content.front()[i];
+        }
+        content.pop_front();
+    }
+    delete parent;
+
+    std::cout << ss.str() << std::endl;
 }
 
 void FileSystem::cd(const std::string &dir_name){
     // Get relevant data block
-    uint32_t data_temp = get_directory_data(dir_name);
+    uint32_t data_temp = get_directory_data_block(dir_name);
     if (data_temp == INVALID) return;
 
     // Set new current directory
@@ -428,7 +500,7 @@ void FileSystem::info(std::string &file){
     // Get parent data block
     uint32_t data_parent;
     if (!param[0].empty()) {
-        data_parent = get_directory_data(param[0]);
+        data_parent = get_directory_data_block(param[0]);
         if (data_parent == INVALID) return;
     } else data_parent = inode_vector[curr_dir->self]->direct1;
 
@@ -446,21 +518,221 @@ void FileSystem::info(std::string &file){
         return;
     }
 
+    // Count indirect blocks
+    uint32_t in1_d = 0, in1_i = 0, in2_d = 0, in2_i = 0, in2_i2 = 0;
+    auto *info_inode = inode_vector[id];
+    if (info_inode->indirect1 != INVALID){
+        auto *ref = new ReferenceBlock(data_vector[info_inode->indirect1]);
+        in1_d = ref->get_reference_count();
+        in1_i = 1;
+        delete ref;
+    }
+    if (info_inode->indirect2 != INVALID){
+        auto *ref = new ReferenceBlock(data_vector[info_inode->indirect2]);
+        for (uint32_t i = 0; i < ref->get_reference_count(); i++){
+            auto *ref_1 = new ReferenceBlock(data_vector[ref->get_reference(i)]);
+            in2_d += ref_1->get_reference_count();
+            delete ref_1;
+        }
+        in2_i = ref->get_reference_count();
+        in2_i2 = 1;
+        delete ref;
+    }
+
     // Print content
     std::stringstream ss;
-    auto *file_inode = inode_vector[id];
-    ss << param[1] << " - " << file_inode->file_size << " - i-node " << id << " - " << file_inode->occupied_blocks();
-    std::cout << ss.str() << std::endl;
-
+    std::string name = parent->get_file_name(id);
+    if (id == 0) name = "/";
+    ss << name
+       << " - file size " << info_inode->fs_size
+       << " - i-node " << id
+       << " - direct blocks " << info_inode->occupied_blocks()
+       << " - indirect 1 blocks " << in1_d << "+" << in1_i
+       << " - indirect 2 blocks " << in2_d << "+" << in2_i << "+" << in2_i2;
     delete parent;
+
+    std::cout << ss.str() << std::endl;
 }
 
-void FileSystem::incp(const std::string &file1, const std::string &file2){
+void FileSystem::incp(const std::string &system, std::string &virt){
+    // Get parsed path and name
+    std::array<std::string, 2> param = parse_path_and_name(virt);
 
+    // Get parent data block
+    uint32_t data_parent;
+    if (!param[0].empty()) {
+        data_parent = get_directory_data_block(param[0]);
+        if (data_parent == INVALID) return;
+    } else data_parent = inode_vector[curr_dir->self]->direct1;
+
+    // Empty name
+    if (param[1].empty()){
+        std::cout << "Path not found" << std::endl;
+        return;
+    }
+
+    // Existing name
+    auto *parent = new Directory(data_vector[data_parent]);
+    if (parent->get_file_inode(param[1]) != INVALID){
+        std::cout << "Exist" << std::endl;
+        delete parent;
+        return;
+    }
+
+    // Assign inode
+    uint32_t inode_id = inode_bitmap->get_free();
+    if (inode_id == INVALID){
+        std::cout << "Out of free inodes" << std::endl;
+        return;
+    }
+
+    // Try open file
+    std::ifstream file(system);
+    if (!file.is_open()){
+        std::cerr << "File not found" << std::endl;
+        return;
+    }
+
+    // Determine blocks needed
+    file.seekg(0, std::ios::end);
+    uint32_t file_size = file.tellg();
+    uint32_t needed = (file_size + CLUSTER_SIZE) / CLUSTER_SIZE;
+    file.seekg(0, std::ios::beg);
+    if (needed > DIRECT_REF){
+        if (needed > DIRECT_REF + INDIRECT_1_REF){
+            needed += (needed + INDIRECT_1_REF) / INDIRECT_1_REF;
+            needed++;
+        }
+        needed++;
+    }
+    if (!data_bitmap->check_free(needed) || needed > MAX_FILE_SIZE){
+        std::cerr << "Out of free data blocks" << std::endl;
+        inode_bitmap->set_free(inode_id);
+        file.close();
+        return;
+    }
+
+    // Read all data
+    std::deque<std::array<unsigned char, CLUSTER_SIZE>> all_data;
+    while (!file.eof()) {
+        std::array<unsigned char, CLUSTER_SIZE> data = {};
+        data.fill('\0');
+        file.read(reinterpret_cast<char*>(data.data()), CLUSTER_SIZE);
+        if (file.gcount() > 0) all_data.push_back(data);
+    }
+
+    // Write direct blocks to inode
+    auto *file_inode = inode_vector[inode_id];
+    file_inode->set_size(file_size, needed * CLUSTER_SIZE);
+    for (int i = 0; i < DIRECT_REF; i++){
+        if (all_data.empty()) break;
+        uint32_t data_id = data_bitmap->get_free();
+        file_inode->write_direct_data(data_id);
+        data_vector[data_id] = all_data.front();
+        all_data.pop_front();
+    }
+
+    // Write indirect 1 blocks to inode
+    if (!all_data.empty()){
+        auto *indir_1 = new ReferenceBlock();
+        for (int i = 0; i < INDIRECT_1_REF; i++){
+            if (all_data.empty()) break;
+            uint32_t data_id = data_bitmap->get_free();
+            indir_1->add_reference(data_id);
+            data_vector[data_id] = all_data.front();
+            all_data.pop_front();
+        }
+        uint32_t data_id = data_bitmap->get_free();
+        file_inode->indirect1 = data_id;
+        data_vector[data_id] = indir_1->serialize();
+        delete indir_1;
+    }
+
+    // Write indirect 2 blocks to inode
+    if (!all_data.empty()){
+        auto *indir_2 = new ReferenceBlock();
+        for (int i = 0; i < INDIRECT_2_REF; i++){
+            if (all_data.empty()) break;
+            auto *indir_1 = new ReferenceBlock();
+            for (int j = 0; j < INDIRECT_1_REF; j++){
+                if (all_data.empty()) break;
+                uint32_t data_id = data_bitmap->get_free();
+                indir_1->add_reference(data_id);
+                data_vector[data_id] = all_data.front();
+                all_data.pop_front();
+            }
+            uint32_t data_id = data_bitmap->get_free();
+            indir_2->add_reference(data_id);
+            data_vector[data_id] = indir_1->serialize();
+            delete indir_1;
+        }
+        uint32_t data_id = data_bitmap->get_free();
+        file_inode->indirect2 = data_id;
+        data_vector[data_id] = indir_2->serialize();
+        delete indir_2;
+    }
+
+    // Update parent directory
+    uint32_t parent_data = inode_vector[parent->self]->direct1;
+    parent->add_file(param[1], inode_id);
+    data_vector[parent_data] = parent->serialize();
+
+    // Update current directory
+    if (parent->self == curr_dir->self){
+        delete curr_dir;
+        curr_dir = new Directory(data_vector[parent_data]);
+    }
+    delete parent;
+
+    std::cout << "Ok" << std::endl;
 }
 
-void FileSystem::outcp(const std::string &file1, const std::string &file2){
+void FileSystem::outcp(std::string &virt, const std::string &system){
+    // Get parsed path and name
+    std::array<std::string, 2> param = parse_path_and_name(virt);
 
+    // Get parent data block
+    uint32_t data_parent;
+    if (!param[0].empty()) {
+        data_parent = get_directory_data_block(param[0]);
+        if (data_parent == INVALID) return;
+    } else data_parent = inode_vector[curr_dir->self]->direct1;
+
+    // Empty name
+    if (param[1].empty()){
+        std::cout << "Path not found" << std::endl;
+        return;
+    }
+
+    // Existing name
+    auto *parent = new Directory(data_vector[data_parent]);
+    uint32_t file_inode = parent->get_file_inode(param[1]);
+    if (file_inode == INVALID){
+        std::cout << "File not found" << std::endl;
+        delete parent;
+        return;
+    }
+
+    // Try open file
+    std::ofstream file(system);
+    if (!file.is_open()){
+        std::cerr << "Could not create file" << std::endl;
+        return;
+    }
+    file.seekp(0, std::ios::beg);
+
+    // Write data to file
+    uint32_t size = CLUSTER_SIZE;
+    std::deque<std::array<unsigned char, CLUSTER_SIZE>> content = get_file_content(file_inode);
+    while (!content.empty()){
+        if (content.size() == 1) size = inode_vector[file_inode]->raw_size % CLUSTER_SIZE;
+        file.write(reinterpret_cast<const char*>(content.front().data()), CLUSTER_SIZE);
+        content.pop_front();
+    }
+    file.close();
+    delete parent;
+
+    std::cout << "Ok" << std::endl;
 }
 
 void FileSystem::ln(const std::string &file1, const std::string &file2){

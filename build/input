@@ -1,9 +1,9 @@
-format 60000
+format 3000000
 mkdir dir1
 mkdir dir2
 mkdir /dir3
 mkdir /dir1/sub1
-cd /dir1/sub1
-mkdir subsub1
-cd /
+mkdir /dir1/sub1/subsub1
+incp file1 file1
+incp file2 file2
 ls
