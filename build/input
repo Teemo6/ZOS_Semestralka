@@ -1,7 +1,7 @@
-format 3000000
+format 500000
 mkdir dir1
 mkdir dir2
-mkdir /dir3
+mkdir dir3
 mkdir /dir1/sub1
 mkdir /dir1/sub1/subsub1
 incp file1 file1

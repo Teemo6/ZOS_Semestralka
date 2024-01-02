@@ -25,7 +25,9 @@ private:
 
     void write_all();
 
-    void free_inode(uint32_t id);
+    void free_directory_inode(uint32_t id);
+    std::array<unsigned char, CLUSTER_SIZE> create_empty_data_block(uint32_t id);
+    std::deque<uint32_t> get_file_data_blocks(uint32_t inode);
     std::deque<std::array<unsigned char, CLUSTER_SIZE>> get_file_content(uint32_t inode);
     uint32_t get_directory_data_block(const std::string &path);
     std::array<std::string, 2> parse_path_and_name(std::string &path);
@@ -39,7 +41,7 @@ public:
 
     void cp(const std::string &file1, const std::string &file2);
     void mv(std::string &source, std::string &dest);
-    void rm(const std::string &file);
+    void rm(std::string &file);
     void mkdir(std::string &dir_name);
     void rmdir(std::string &dir_name);
     void ls(const std::string &dir_name);

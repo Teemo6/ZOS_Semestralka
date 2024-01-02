@@ -2,6 +2,7 @@
 #define ZOS_SEMESTRALKA_CONSTANTS_HPP
 
 #include <unordered_map>
+#include <string>
 
 const uint32_t STRING_LENGHT = 12;
 
@@ -30,7 +31,7 @@ const std::string CALL_FORMAT_MESSAGE = "File system not initialized, call 'form
 const std::unordered_map<std::string, int> COMMANDS = {
         {"cp",      3},
         {"mv",      3},
-        {"rm",      3},
+        {"rm",      2},
         {"mkdir",   2},
         {"rmdir",   2},
         {"cat",     2},

@@ -50,7 +50,6 @@ FileSystem::FileSystem(std::string new_name) : fs_name(std::move(new_name)){
         // Data blocks
         for (uint32_t i = 0; i < sb->cluster_count; i++){
             std::array<unsigned char, CLUSTER_SIZE> data = {};
-            data.fill('\0');
             in_file.read(reinterpret_cast<char*>(data.data()), data.size());
             data_vector.emplace_back(data);
         }
@@ -85,15 +84,62 @@ std::string FileSystem::get_name() const{
     return fs_name;
 }
 
-void FileSystem::free_inode(uint32_t id){
+void FileSystem::free_directory_inode(uint32_t id){
     uint32_t dir_data = inode_vector[id]->direct1;
-    std::array<unsigned char, CLUSTER_SIZE> data = {};
-    data.fill('\0');
     data_bitmap->set_free(dir_data);
-    data_vector[dir_data] = data;
+    data_vector[dir_data] = create_empty_data_block(dir_data);
 
     inode_bitmap->set_free(id);
     inode_vector[id]->reset();
+}
+
+std::array<unsigned char, CLUSTER_SIZE> FileSystem::create_empty_data_block(uint32_t id){
+    std::array<unsigned char, CLUSTER_SIZE> data = {};
+    data.fill('\0');
+
+    std::string sourceString = "Empty data block ";
+    sourceString += std::to_string(id);
+    std::copy(std::begin(sourceString), std::end(sourceString), data.begin());
+
+    return data;
+}
+
+std::deque<uint32_t> FileSystem::get_file_data_blocks(uint32_t inode){
+    std::deque<uint32_t> data_blocks;
+    auto *file = inode_vector[inode];
+
+    // Direct block
+    if (file->direct1 != INVALID) data_blocks.push_back(file->direct1);
+    if (file->direct2 != INVALID) data_blocks.push_back(file->direct2);
+    if (file->direct3 != INVALID) data_blocks.push_back(file->direct3);
+    if (file->direct4 != INVALID) data_blocks.push_back(file->direct4);
+    if (file->direct5 != INVALID) data_blocks.push_back(file->direct5);
+
+    // Indirect 1 blocks
+    if (file->indirect1 != INVALID){
+        data_blocks.push_back(file->indirect1);
+        auto *ref = new ReferenceBlock(data_vector[file->indirect1]);
+        for (int i = 0; i < ref->get_reference_count(); i++){
+            data_blocks.push_back(ref->get_reference(i));
+        }
+        delete ref;
+    }
+
+    // Indirect 2 blocks
+    if (file->indirect2 != INVALID){
+        data_blocks.push_back(file->indirect2);
+        auto *ref2 = new ReferenceBlock(data_vector[file->indirect2]);
+        for (int i = 0; i < ref2->get_reference_count(); i++){
+            data_blocks.push_back(ref2->get_reference(i));
+            auto *ref1 = new ReferenceBlock(data_vector[ref2->get_reference(i)]);
+            for (int j = 0; j < ref1->get_reference_count(); j++){
+                data_blocks.push_back(ref1->get_reference(j));
+            }
+            delete ref1;
+        }
+        delete ref2;
+    }
+    return data_blocks;
 }
 
 std::deque<std::array<unsigned char, CLUSTER_SIZE>> FileSystem::get_file_content(uint32_t inode){
@@ -266,8 +312,59 @@ void FileSystem::mv(std::string &source, std::string &dest){
     std::cout << "Ok" << std::endl;
 }
 
-void FileSystem::rm(const std::string &file){
+void FileSystem::rm(std::string &file){
+    // Get parsed path and name
+    std::array<std::string, 2> param = parse_path_and_name(file);
 
+    // Get parent data block
+    uint32_t data_parent;
+    if (!param[0].empty()) {
+        data_parent = get_directory_data_block(param[0]);
+        if (data_parent == INVALID) return;
+    } else data_parent = inode_vector[curr_dir->self]->direct1;
+
+    // Empty name
+    if (param[1].empty()){
+        std::cout << "File not found" << std::endl;
+        return;
+    }
+
+    // Non-existing name
+    auto *parent = new Directory(data_vector[data_parent]);
+    uint32_t file_inode = parent->get_file_inode(param[1]);
+    if (file_inode == INVALID){
+        std::cout << "File not found" << std::endl;
+        delete parent;
+        return;
+    }
+
+    // Empty data blocks
+    uint32_t size = CLUSTER_SIZE;
+    std::deque<uint32_t> data_blocks = get_file_data_blocks(file_inode);
+    while (!data_blocks.empty()){
+        uint32_t id = data_blocks.front();
+        data_bitmap->set_free(id);
+        data_vector[id] = create_empty_data_block(id);
+        data_blocks.pop_front();
+    }
+
+    // Free inode
+    inode_bitmap->set_free(file_inode);
+    inode_vector[file_inode]->reset();
+
+    // Update parent directory
+    parent->remove_file(param[1]);
+    uint32_t parent_data = inode_vector[parent->self]->direct1;
+    data_vector[parent_data] = parent->serialize();
+
+    // Update current directory
+    if (parent->self == curr_dir->self){
+        delete curr_dir;
+        curr_dir = new Directory(data_vector[parent_data]);
+    }
+    delete parent;
+
+    std::cout << "Ok" << std::endl;
 }
 
 void FileSystem::mkdir(std::string &dir_name){
@@ -376,7 +473,7 @@ void FileSystem::rmdir(std::string &dir_name){
 
     // Update parent directory
     parent->remove_file(param[1]);
-    free_inode(to_remove);
+    free_directory_inode(to_remove);
     uint32_t parent_data = inode_vector[parent->self]->direct1;
     data_vector[parent_data] = parent->serialize();
 
@@ -589,7 +686,7 @@ void FileSystem::incp(const std::string &system, std::string &virt){
     // Try open file
     std::ifstream file(system);
     if (!file.is_open()){
-        std::cerr << "File not found" << std::endl;
+        std::cout << "File not found" << std::endl;
         return;
     }
 
@@ -606,7 +703,7 @@ void FileSystem::incp(const std::string &system, std::string &virt){
         needed++;
     }
     if (!data_bitmap->check_free(needed) || needed > MAX_FILE_SIZE){
-        std::cerr << "Out of free data blocks" << std::endl;
+        std::cout << "Out of free data blocks" << std::endl;
         inode_bitmap->set_free(inode_id);
         file.close();
         return;
@@ -616,7 +713,6 @@ void FileSystem::incp(const std::string &system, std::string &virt){
     std::deque<std::array<unsigned char, CLUSTER_SIZE>> all_data;
     while (!file.eof()) {
         std::array<unsigned char, CLUSTER_SIZE> data = {};
-        data.fill('\0');
         file.read(reinterpret_cast<char*>(data.data()), CLUSTER_SIZE);
         if (file.gcount() > 0) all_data.push_back(data);
     }
@@ -700,11 +796,11 @@ void FileSystem::outcp(std::string &virt, const std::string &system){
 
     // Empty name
     if (param[1].empty()){
-        std::cout << "Path not found" << std::endl;
+        std::cout << "File not found" << std::endl;
         return;
     }
 
-    // Existing name
+    // Non-existing name
     auto *parent = new Directory(data_vector[data_parent]);
     uint32_t file_inode = parent->get_file_inode(param[1]);
     if (file_inode == INVALID){
@@ -716,7 +812,7 @@ void FileSystem::outcp(std::string &virt, const std::string &system){
     // Try open file
     std::ofstream file(system);
     if (!file.is_open()){
-        std::cerr << "Could not create file" << std::endl;
+        std::cout << "Could not create file" << std::endl;
         return;
     }
     file.seekp(0, std::ios::beg);
@@ -726,7 +822,7 @@ void FileSystem::outcp(std::string &virt, const std::string &system){
     std::deque<std::array<unsigned char, CLUSTER_SIZE>> content = get_file_content(file_inode);
     while (!content.empty()){
         if (content.size() == 1) size = inode_vector[file_inode]->raw_size % CLUSTER_SIZE;
-        file.write(reinterpret_cast<const char*>(content.front().data()), CLUSTER_SIZE);
+        file.write(reinterpret_cast<const char*>(content.front().data()), size);
         content.pop_front();
     }
     file.close();
@@ -764,14 +860,7 @@ void FileSystem::format(uint32_t size){
     }
 
     for (uint32_t i = 0; i < sb->cluster_count; i++){
-        std::array<unsigned char, CLUSTER_SIZE> data = {};
-        data.fill('\0');
-
-        std::string sourceString = "Hello from data block ";
-        sourceString += std::to_string(i);
-        std::copy(std::begin(sourceString), std::end(sourceString), data.begin());
-
-        data_vector.emplace_back(data);
+        data_vector.emplace_back(create_empty_data_block(i));
     }
 
     // Setup root dir
