@@ -1,4 +1,4 @@
-format 500000
+format 500kB
 mkdir dir1
 mkdir dir2
 mkdir dir3

@@ -7,8 +7,6 @@
 #include "Constants.hpp"
 
 class Superblock {
-private:
-
 public:
     Superblock();
 

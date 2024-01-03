@@ -25,7 +25,7 @@ const uint32_t MAX_FILE_SIZE =
         INDIRECT_1_REF * CLUSTER_SIZE +
         INDIRECT_2_REF * CLUSTER_SIZE;
 
-const uint32_t MINIMUM_FORMAT_SIZE = 50000;
+const uint32_t MINIMUM_FORMAT_SIZE = 60000;
 const std::string CALL_FORMAT_MESSAGE = "File system not initialized, call 'format' first";
 
 const std::unordered_map<std::string, int> COMMANDS = {

@@ -73,9 +73,17 @@ bool InputParser::parse_input(const std::string &input, FileSystem *fs){
 
     else if (command[0] == "format"){
         uint32_t size;
-        try{
-            size = std::stoi(command[1]);
-        } catch (const std::exception &e){
+        size_t pos_MB = command[1].find("MB");
+        size_t pos_kB = command[1].find("kB");
+        try {
+            if (pos_MB != std::string::npos){
+                size = std::stoi(command[1].substr(0, pos_MB)) * 1000000;
+            } else if (pos_kB != std::string::npos) {
+                size = std::stoi(command[1].substr(0, pos_kB)) * 1000;
+            } else {
+                size = std::stoi(command[1]);
+            }
+        } catch (const std::exception &e) {
             std::cout << "Invalid parameter '" << command[1] << "'" << std::endl;
             return true;
         }
@@ -97,7 +105,7 @@ void InputParser::parse_load(const std::string &input, FileSystem *fs){
 
     std::string line;
     while (std::getline(file, line)){
-        std::cout << line << std::endl;
+        std::cout << fs->get_name() << "> " << line << std::endl;
         parse_input(line, fs);
     }
     loading = false;

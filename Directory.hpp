@@ -7,8 +7,6 @@
 #include "DirectoryItem.hpp"
 
 class Directory {
-private:
-
 public:
     Directory(uint32_t self_inode, uint32_t parent_inode);
     explicit Directory(std::array<unsigned char, CLUSTER_SIZE> &data);

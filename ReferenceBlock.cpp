@@ -1,5 +1,4 @@
 #include "ReferenceBlock.hpp"
-#include "Constants.hpp"
 
 ReferenceBlock::ReferenceBlock(){
     references = std::vector<uint32_t>();

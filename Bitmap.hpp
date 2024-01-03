@@ -1,10 +1,9 @@
 #ifndef ZOS_SEMESTRALKA_BITMAP_HPP
 #define ZOS_SEMESTRALKA_BITMAP_HPP
 
-#include <vector>
 #include <cstdint>
 #include <string>
-#include <fstream>
+#include <vector>
 #include <bitset>
 
 #include "Constants.hpp"

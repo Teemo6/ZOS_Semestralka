@@ -1,5 +1,3 @@
-#include <iostream>
-#include <bitset>
 #include <sstream>
 
 #include "Bitmap.hpp"
@@ -42,7 +40,6 @@ uint32_t Bitmap::get_free(){
             if (pos >= bit_count) return INVALID;
             if (!data[set][bit]){
                 data[set][bit] = true;
-                std::cout << "assigned " << pos << std::endl;
                 return pos;
             }
         }
@@ -55,7 +52,6 @@ void Bitmap::set_free(uint32_t pos){
         uint32_t set = pos / BITMAP_BITS;
         uint32_t bit = pos % BITMAP_BITS;
         data[set][bit] = false;
-        std::cout << "set " << pos << " free" << std::endl;
     }
 }
 

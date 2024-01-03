@@ -22,4 +22,8 @@ add_executable(
         Bitmap.hpp
         Directory.cpp
         Directory.hpp
-        InputParser.cpp InputParser.hpp ReferenceBlock.cpp ReferenceBlock.hpp)
+        InputParser.cpp
+        InputParser.hpp
+        ReferenceBlock.cpp
+        ReferenceBlock.hpp
+)

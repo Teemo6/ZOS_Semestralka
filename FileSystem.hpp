@@ -2,18 +2,20 @@
 #define ZOS_SEMESTRALKA_FILESYSTEM_H
 
 #include <deque>
+#include <fstream>
 
 #include "Superblock.hpp"
-#include "DirectoryItem.hpp"
-#include "Directory.hpp"
-#include "IndexNode.hpp"
 #include "Bitmap.hpp"
+#include "IndexNode.hpp"
+#include "Directory.hpp"
+#include "ReferenceBlock.hpp"
 
 class FileSystem {
 private:
     bool initialized;
     std::string fs_name;
     std::ofstream out_file;
+    Directory *curr_dir;
 
     Superblock *sb;
     Bitmap *inode_bitmap;
@@ -21,10 +23,9 @@ private:
     std::vector<IndexNode *> inode_vector;
     std::vector<std::array<unsigned char, CLUSTER_SIZE>> data_vector;
 
-    Directory *curr_dir;
-
     void write_all();
 
+    void update_curr_dir_if_same(uint32_t id);
     void free_directory_inode(uint32_t id);
     std::array<unsigned char, CLUSTER_SIZE> create_empty_data_block(uint32_t id);
     std::deque<uint32_t> get_file_data_blocks(uint32_t inode);
@@ -39,7 +40,7 @@ public:
     bool is_initialized() const;
     std::string get_name() const;
 
-    void cp(const std::string &file1, const std::string &file2);
+    void cp(std::string &source, std::string &dest);
     void mv(std::string &source, std::string &dest);
     void rm(std::string &file);
     void mkdir(std::string &dir_name);
@@ -51,7 +52,7 @@ public:
     void info(std::string &file);
     void incp(const std::string &system, std::string &virt);
     void outcp(std::string &virt, const std::string &system);
-    void ln(const std::string &file1, const std::string &file2);
+    void ln(std::string &source, std::string &link);
     void format(uint32_t size);
 };
 
