@@ -1,6 +1,5 @@
 #include <iostream>
 #include <sstream>
-#include <cstring>
 
 #include "FileSystem.hpp"
 
@@ -149,7 +148,6 @@ void FileSystem::cp(std::string &source, std::string &dest){
 
     // Update inode metadata
     auto *dest_inode = inode_vector[inode_id];
-    dest_inode->fs_size = source_inode->fs_size;
     dest_inode->raw_size = source_inode->raw_size;
 
     // Copy direct blocks to inode
@@ -642,7 +640,7 @@ void FileSystem::info(std::string &file){
     std::string name = parent->get_file_name(id);
     if (id == 0) name = "/";
     ss << name
-       << " - file size " << info_inode->fs_size
+       << " - file size " << get_file_data_blocks(id).size() * CLUSTER_SIZE
        << " - i-node " << id
        << " - direct blocks " << info_inode->occupied_blocks()
        << " - indirect 1 blocks " << in1_d << "+" << in1_i
@@ -723,7 +721,7 @@ void FileSystem::incp(const std::string &system, std::string &virt){
     // Update inode metadata
     auto *file_inode = inode_vector[inode_id];
     file_inode->references = 1;
-    file_inode->set_size(file_size, needed * CLUSTER_SIZE);
+    file_inode->raw_size = file_size;
 
     // Write direct blocks to inode
     for (int i = 0; i < DIRECT_REF; i++){

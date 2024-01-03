@@ -6,7 +6,6 @@ IndexNode::IndexNode(uint32_t id) : node_id(id){
     is_directory = FALSE;
     references = INVALID;
     raw_size = INVALID;
-    fs_size = INVALID;
 
     direct1 = INVALID;
     direct2 = INVALID;
@@ -21,7 +20,6 @@ void IndexNode::reset(){
     is_directory = FALSE;
     references = INVALID;
     raw_size = INVALID;
-    fs_size = INVALID;
 
     direct1 = INVALID;
     direct2 = INVALID;
@@ -34,13 +32,7 @@ void IndexNode::reset(){
 
 void IndexNode::set_directory(uint32_t block){
     is_directory = TRUE;
-    fs_size = CLUSTER_SIZE;
     direct1 = block;
-}
-
-void IndexNode::set_size(uint32_t raw, uint32_t fs){
-    raw_size = raw;
-    fs_size = fs;
 }
 
 bool IndexNode::write_direct_data(uint32_t value){
@@ -73,7 +65,6 @@ std::string IndexNode::to_string() const{
     ss << "id: " << node_id
        << ", directory: " << is_directory
        << ", references: " << references
-       << ", size: " << fs_size
        << ", direct1: " << direct1
        << ", direct2: " << direct2
        << ", direct3: " << direct3
