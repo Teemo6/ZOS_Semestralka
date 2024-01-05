@@ -390,6 +390,13 @@ void FileSystem::mkdir(std::string &dir_name){
         return;
     }
 
+    // Directory full
+    if (parent->content.size() >= CLUSTER_SIZE / sizeof(DirectoryItem)){
+        std::cout << "Cannot create more directories" << std::endl;
+        delete parent;
+        return;
+    }
+
     // Assign inode
     uint32_t inode_id = inode_bitmap->get_free();
     if (inode_id == INVALID){
@@ -695,18 +702,25 @@ void FileSystem::incp(const std::string &system, std::string &virt){
         needed++;
     }
 
+    // Check free data blocks
+    if (!data_bitmap->check_free(needed) || needed > MAX_FILE_SIZE){
+        std::cout << "Out of free data blocks" << std::endl;
+        file.close();
+        return;
+    }
+
+    // Directory full
+    if (parent->content.size() >= CLUSTER_SIZE / sizeof(DirectoryItem)){
+        std::cout << "Cannot create more files" << std::endl;
+        file.close();
+        delete parent;
+        return;
+    }
+
     // Assign inode
     uint32_t inode_id = inode_bitmap->get_free();
     if (inode_id == INVALID){
         std::cout << "Out of free inodes" << std::endl;
-        return;
-    }
-
-    // Check free data blocks
-    if (!data_bitmap->check_free(needed) || needed > MAX_FILE_SIZE){
-        std::cout << "Out of free data blocks" << std::endl;
-        inode_bitmap->set_free(inode_id);
-        file.close();
         return;
     }
 
